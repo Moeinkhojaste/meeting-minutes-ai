@@ -44,6 +44,11 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
         help="Confirm that the reference was independently checked by listening.",
     )
     parser.add_argument(
+        "--reference-speaker-labels",
+        action="store_true",
+        help="Exclude explicit '<speaker>:' prefixes from reference scoring.",
+    )
+    parser.add_argument(
         "--models",
         nargs="+",
         choices=SUPPORTED_MODEL_NAMES,
@@ -141,6 +146,9 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, object]:
                         measured["evaluation"] = evaluate_files(
                             reference_path,
                             transcript_path,
+                            reference_speaker_labels=(
+                                args.reference_speaker_labels
+                            ),
                         )
                     measured_runs.append(measured)
 
@@ -171,6 +179,9 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, object]:
             "computeType": COMPUTE_TYPE,
             "warmupsPerModel": args.warmups,
             "measuredRunsPerModel": args.runs,
+            "referenceSpeakerLabelsRemoved": (
+                args.reference_speaker_labels
+            ),
             "samplingIntervalSeconds": SAMPLE_INTERVAL_SECONDS,
         },
         "environment": _environment_metadata(),

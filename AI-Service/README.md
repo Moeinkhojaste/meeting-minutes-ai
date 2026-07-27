@@ -142,8 +142,14 @@ python .\AI-Service\benchmark_stt.py `
   ".\Datasets\references\sample.verified-reference.txt" `
   --dataset-version "persian-dev-v1" `
   --reference-verified `
+  --reference-speaker-labels `
   --output ".\Evaluation\results\persian-dev-v1.checkpoints.json"
 ```
+
+Use `--reference-speaker-labels` only when every annotated reference turn has
+an explicit `<speaker>:` prefix. The evaluator then excludes those annotations
+from both raw and normalized scoring while leaving the reference file itself
+unchanged. Without the flag, all reference text is scored.
 
 For each of `small`, `medium`, and `large-v3-turbo`, the runner performs one
 warm-up followed by three measured CUDA `float16` runs. It records raw and

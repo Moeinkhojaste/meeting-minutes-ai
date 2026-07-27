@@ -12,6 +12,7 @@ sys.path.insert(0, str(AI_SERVICE_DIRECTORY))
 
 from evaluate_transcript import (  # noqa: E402
     calculate_metrics,
+    strip_reference_speaker_labels,
     strip_segment_timestamps,
     write_normalized_text,
 )
@@ -30,6 +31,33 @@ class EvaluateTranscriptTests(unittest.TestCase):
 
     def test_plain_text_without_timestamps_is_preserved(self) -> None:
         self.assertEqual(strip_segment_timestamps("سلام دنیا"), "سلام دنیا")
+
+    def test_explicit_reference_speaker_labels_are_removed(self) -> None:
+        reference = "سارا: سلام\n\nامیر: درود"
+
+        self.assertEqual(
+            strip_reference_speaker_labels(reference),
+            "سلام\n\nدرود",
+        )
+
+    def test_reference_speaker_labels_are_only_removed_when_requested(
+        self,
+    ) -> None:
+        reference = "سارا: سلام\nامیر: درود"
+        hypothesis = "سلام درود"
+
+        unstripped = calculate_metrics(reference, hypothesis)
+        stripped = calculate_metrics(
+            reference,
+            hypothesis,
+            reference_speaker_labels=True,
+        )
+
+        self.assertGreater(unstripped["metrics"]["normalized"]["wer"], 0)
+        self.assertEqual(stripped["metrics"]["normalized"]["wer"], 0)
+        self.assertTrue(
+            stripped["scoring"]["raw"]["referenceSpeakerLabelsRemoved"]
+        )
 
     def test_known_word_and_character_error_rates(self) -> None:
         result = calculate_metrics(

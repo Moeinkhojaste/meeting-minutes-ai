@@ -16,7 +16,11 @@ do not contain private transcript text.
 Generated timestamp prefixes in the form
 `[HH:MM:SS.mmm --> HH:MM:SS.mmm]` are metadata and are removed before both raw
 and normalized scoring. For raw scoring, no other content transformation is
-performed except trimming outer whitespace.
+performed except trimming outer whitespace. When an annotated human reference
+contains one explicit `<speaker>:` prefix per turn, the evaluator may remove
+those prefixes before scoring only through the explicit
+`--reference-speaker-labels` option. The annotation remains unchanged in the
+source file, and the scoring JSON records whether this option was used.
 
 ## Normalization order
 

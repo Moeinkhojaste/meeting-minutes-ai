@@ -19,6 +19,7 @@ TIMESTAMP_PREFIX_PATTERN = re.compile(
     r"\s*-->\s*"
     r"\d{2}:\d{2}:\d{2}(?:\.\d{3})?\]\s*"
 )
+REFERENCE_SPEAKER_LABEL_PATTERN = re.compile(r"^\s*[^:\n]{1,40}:\s*")
 
 
 def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespace:
@@ -54,6 +55,14 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
         type=Path,
         help="Optional path for the derived normalized hypothesis text",
     )
+    parser.add_argument(
+        "--reference-speaker-labels",
+        action="store_true",
+        help=(
+            "Remove an explicit speaker-label prefix ending in ':' from "
+            "each reference line before scoring."
+        ),
+    )
     return parser.parse_args(arguments)
 
 
@@ -65,10 +74,28 @@ def strip_segment_timestamps(text: str) -> str:
     )
 
 
-def calculate_metrics(reference: str, hypothesis: str) -> dict[str, object]:
+def strip_reference_speaker_labels(text: str) -> str:
+    """Remove one explicit speaker annotation from each reference line."""
+    return "\n".join(
+        REFERENCE_SPEAKER_LABEL_PATTERN.sub("", line)
+        for line in text.splitlines()
+    )
+
+
+def calculate_metrics(
+    reference: str,
+    hypothesis: str,
+    *,
+    reference_speaker_labels: bool = False,
+) -> dict[str, object]:
     """Return raw and normalized WER/CER without mutating either input."""
+    scoring_reference = (
+        strip_reference_speaker_labels(reference)
+        if reference_speaker_labels
+        else reference
+    )
     raw_hypothesis = strip_segment_timestamps(hypothesis)
-    reference_variants = create_text_variants(reference)
+    reference_variants = create_text_variants(scoring_reference)
     hypothesis_variants = create_text_variants(raw_hypothesis)
     raw = _calculate_metric_set(
         reference_variants.raw.strip(),
@@ -114,12 +141,14 @@ def calculate_metrics(reference: str, hypothesis: str) -> dict[str, object]:
         "scoring": {
             "raw": {
                 "timestampPrefixesRemoved": True,
+                "referenceSpeakerLabelsRemoved": reference_speaker_labels,
                 "outerWhitespaceTrimmed": True,
                 "contentNormalized": False,
                 "cerWhitespaceExcluded": False,
             },
             "normalized": {
                 "timestampPrefixesRemoved": True,
+                "referenceSpeakerLabelsRemoved": reference_speaker_labels,
                 "policyApplied": True,
                 "cerWhitespaceExcluded": True,
             },
@@ -181,6 +210,8 @@ def _calculate_metric_set(
 def evaluate_files(
     reference_path: Path,
     hypothesis_path: Path,
+    *,
+    reference_speaker_labels: bool = False,
 ) -> dict[str, object]:
     """Read two UTF-8 transcript files and calculate their metrics."""
     _validate_text_file(reference_path, "Reference")
@@ -188,6 +219,7 @@ def evaluate_files(
     return calculate_metrics(
         reference_path.read_text(encoding="utf-8"),
         hypothesis_path.read_text(encoding="utf-8"),
+        reference_speaker_labels=reference_speaker_labels,
     )
 
 
@@ -196,6 +228,7 @@ def write_normalized_text(
     output_path: Path,
     *,
     remove_timestamps: bool,
+    remove_speaker_labels: bool = False,
 ) -> None:
     """Write a normalized derivative while leaving the raw source unchanged."""
     resolved_source = source_path.resolve()
@@ -206,6 +239,8 @@ def write_normalized_text(
     raw_text = resolved_source.read_text(encoding="utf-8")
     if remove_timestamps:
         raw_text = strip_segment_timestamps(raw_text)
+    if remove_speaker_labels:
+        raw_text = strip_reference_speaker_labels(raw_text)
     normalized_text = create_text_variants(raw_text).normalized
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
     resolved_output.write_text(normalized_text + "\n", encoding="utf-8")
@@ -227,7 +262,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
     hypothesis_path = args.hypothesis_path.expanduser().resolve()
 
     try:
-        result = evaluate_files(reference_path, hypothesis_path)
+        result = evaluate_files(
+            reference_path,
+            hypothesis_path,
+            reference_speaker_labels=args.reference_speaker_labels,
+        )
         rendered_result = json.dumps(result, ensure_ascii=False, indent=2)
         print(rendered_result)
         if args.output:
@@ -243,6 +282,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 reference_path,
                 args.normalized_reference_output,
                 remove_timestamps=False,
+                remove_speaker_labels=args.reference_speaker_labels,
             )
         if args.normalized_hypothesis_output:
             write_normalized_text(
