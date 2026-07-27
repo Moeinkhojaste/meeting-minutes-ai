@@ -5,8 +5,14 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
+
+from settings import (
+    DEFAULT_ENV_FILE,
+    STT_MODEL_ENVIRONMENT_NAME,
+    resolve_setting,
+)
 
 DEFAULT_MODEL_NAME = "large-v3-turbo"
 SUPPORTED_MODEL_NAMES = ("small", "medium", "large-v3-turbo")
@@ -47,11 +53,17 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
     parser.add_argument(
         "--model",
         choices=SUPPORTED_MODEL_NAMES,
-        default=DEFAULT_MODEL_NAME,
+        default=None,
         help=(
             "Whisper checkpoint used for the controlled STT comparison "
-            f"(default: {DEFAULT_MODEL_NAME})"
+            f"(default after configuration precedence: {DEFAULT_MODEL_NAME})"
         ),
+    )
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=DEFAULT_ENV_FILE,
+        help="Optional .env file used after process environment variables.",
     )
     return parser.parse_args(arguments)
 
@@ -113,7 +125,7 @@ def verify_cuda_support() -> None:
     except ModuleNotFoundError as error:
         raise RuntimeError(
             "CTranslate2 is not installed. Run "
-            "'python -m pip install -r AI-Service/requirements.txt'."
+            "'python -m pip install -r ai-service/requirements.txt'."
         ) from error
 
     try:
@@ -145,7 +157,7 @@ def transcribe(
     except ModuleNotFoundError as error:
         raise RuntimeError(
             "faster-whisper is not installed. Run "
-            "'python -m pip install -r AI-Service/requirements.txt'."
+            "'python -m pip install -r ai-service/requirements.txt'."
         ) from error
 
     verify_cuda_support()
@@ -191,9 +203,21 @@ def main(arguments: Sequence[str] | None = None) -> int:
     )
 
     try:
+        model_name = resolve_setting(
+            args.model,
+            STT_MODEL_ENVIRONMENT_NAME,
+            DEFAULT_MODEL_NAME,
+            env_file=args.env_file.expanduser().resolve(),
+        )
+        if model_name not in SUPPORTED_MODEL_NAMES:
+            supported = ", ".join(SUPPORTED_MODEL_NAMES)
+            raise ValueError(
+                f"Unsupported configured model '{model_name}'. "
+                f"Supported checkpoints: {supported}"
+            )
         validate_audio_path(audio_path)
         validate_output_path(audio_path, output_path)
-        transcribe(audio_path, output_path, args.model)
+        transcribe(audio_path, output_path, model_name)
     except RuntimeError as error:
         print(f"Error: {error}", file=sys.stderr)
         print("No CPU fallback was attempted.", file=sys.stderr)

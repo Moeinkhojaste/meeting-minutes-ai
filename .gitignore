@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.env
+!.env.example
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -359,7 +360,11 @@ paket-files/
 Datasets/audio/
 Datasets/references/
 Evaluation/results/
-AI-Service/output/
+ai-service/output/
+frontend/dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.transcript.txt
 models/
 

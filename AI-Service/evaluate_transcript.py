@@ -6,9 +6,9 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
-from typing import Sequence
 
 from jiwer import process_characters, process_words
 

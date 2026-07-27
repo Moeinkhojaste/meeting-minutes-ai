@@ -34,7 +34,7 @@ From the repository root, create and activate a virtual environment:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r .\AI-Service\requirements.txt
+python -m pip install -r .\ai-service\requirements.txt
 ```
 
 The first successful run downloads the Whisper `large-v3-turbo` model files.
@@ -48,7 +48,7 @@ change the script to CPU unless CPU execution is an explicit project decision.
 ## Run
 
 ```powershell
-python .\AI-Service\transcribe.py "D:\path\meeting.mp3"
+python .\ai-service\transcribe.py "D:\path\meeting.mp3"
 ```
 
 By default, `meeting.transcript.txt` is written beside the input audio:
@@ -61,7 +61,7 @@ By default, `meeting.transcript.txt` is written beside the input audio:
 Choose another output location with:
 
 ```powershell
-python .\AI-Service\transcribe.py "D:\path\meeting.mp3" --output ".\AI-Service\output\meeting.txt"
+python .\ai-service\transcribe.py "D:\path\meeting.mp3" --output ".\ai-service\output\meeting.txt"
 ```
 
 The default is Whisper `large-v3-turbo`, selected from the Phase 0 controlled
@@ -69,9 +69,9 @@ comparison. To reproduce or extend the comparison using the same audio and
 reference transcript, select one of the approved checkpoints:
 
 ```powershell
-python .\AI-Service\transcribe.py "D:\path\meeting.mp3" `
+python .\ai-service\transcribe.py "D:\path\meeting.mp3" `
   --model medium `
-  --output ".\AI-Service\output\meeting.medium.transcript.txt"
+  --output ".\ai-service\output\meeting.medium.transcript.txt"
 ```
 
 Supported comparison checkpoints are `small`, `medium`, and
@@ -101,7 +101,7 @@ After manually transcribing and checking an audio sample, compare the reference
 with the generated timestamped transcript:
 
 ```powershell
-python .\AI-Service\evaluate_transcript.py `
+python .\ai-service\evaluate_transcript.py `
   ".\Datasets\references\sample.reference.txt" `
   ".\sample.transcript.txt" `
   --output ".\Evaluation\results\sample.small.json"
@@ -122,7 +122,7 @@ The raw source files are never modified. When an auditable normalized
 derivative is needed, save it to a separate ignored path:
 
 ```powershell
-python .\AI-Service\evaluate_transcript.py `
+python .\ai-service\evaluate_transcript.py `
   ".\Datasets\references\sample.reference.txt" `
   ".\sample.transcript.txt" `
   --normalized-reference-output `
@@ -141,7 +141,7 @@ the reference has been independently verified by listening and
 `--reference-verified` is passed:
 
 ```powershell
-python .\AI-Service\benchmark_stt.py `
+python .\ai-service\benchmark_stt.py `
   ".\private-sample.wav" `
   ".\Datasets\references\sample.verified-reference.txt" `
   --dataset-version "persian-dev-v1" `

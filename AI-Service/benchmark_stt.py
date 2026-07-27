@@ -12,9 +12,9 @@ import tempfile
 import threading
 import time
 import wave
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Sequence
 
 import psutil
 

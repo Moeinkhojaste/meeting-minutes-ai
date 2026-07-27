@@ -10,6 +10,10 @@ from pathlib import Path
 AI_SERVICE_DIRECTORY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(AI_SERVICE_DIRECTORY))
 
+from settings import (  # noqa: E402
+    STT_MODEL_ENVIRONMENT_NAME,
+    resolve_setting,
+)
 from transcribe import (  # noqa: E402
     DEFAULT_MODEL_NAME,
     default_output_path,
@@ -24,8 +28,15 @@ class TranscribeHelpersTests(unittest.TestCase):
     def test_default_model_is_evidence_selected_checkpoint(self) -> None:
         arguments = parse_arguments(["meeting.wav"])
 
-        self.assertEqual(arguments.model, DEFAULT_MODEL_NAME)
-        self.assertEqual(arguments.model, "large-v3-turbo")
+        model_name = resolve_setting(
+            arguments.model,
+            STT_MODEL_ENVIRONMENT_NAME,
+            DEFAULT_MODEL_NAME,
+            environment={},
+            env_file=Path("missing.env"),
+        )
+
+        self.assertEqual(model_name, "large-v3-turbo")
 
     def test_supported_comparison_model_can_be_selected(self) -> None:
         arguments = parse_arguments(
@@ -33,6 +44,45 @@ class TranscribeHelpersTests(unittest.TestCase):
         )
 
         self.assertEqual(arguments.model, "large-v3-turbo")
+
+    def test_model_configuration_precedence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text(
+                f"{STT_MODEL_ENVIRONMENT_NAME}=small\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                resolve_setting(
+                    "large-v3-turbo",
+                    STT_MODEL_ENVIRONMENT_NAME,
+                    DEFAULT_MODEL_NAME,
+                    environment={STT_MODEL_ENVIRONMENT_NAME: "medium"},
+                    env_file=env_file,
+                ),
+                "large-v3-turbo",
+            )
+            self.assertEqual(
+                resolve_setting(
+                    None,
+                    STT_MODEL_ENVIRONMENT_NAME,
+                    DEFAULT_MODEL_NAME,
+                    environment={STT_MODEL_ENVIRONMENT_NAME: "medium"},
+                    env_file=env_file,
+                ),
+                "medium",
+            )
+            self.assertEqual(
+                resolve_setting(
+                    None,
+                    STT_MODEL_ENVIRONMENT_NAME,
+                    DEFAULT_MODEL_NAME,
+                    environment={},
+                    env_file=env_file,
+                ),
+                "small",
+            )
 
     def test_format_timestamp_includes_milliseconds(self) -> None:
         self.assertEqual(format_timestamp(3_661.234), "01:01:01.234")
