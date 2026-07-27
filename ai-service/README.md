@@ -170,3 +170,25 @@ valid model-selection decision.
 
 The accepted Phase 0 result and its limitations are recorded in
 `docs/phase-0-stt-benchmark.md`.
+
+## Dataset and aggregate evaluation
+
+Validate the local private manifest:
+
+```powershell
+python .\ai-service\dataset_manifest.py `
+  .\Datasets\manifest.local.json
+```
+
+Combine evaluator result files into transcript-free JSON and CSV:
+
+```powershell
+python .\ai-service\aggregate_evaluations.py `
+  --dataset-version persian-private-v1 `
+  --entry dev-001:development:.\Evaluation\results\dev-001.json `
+  --json-output .\Evaluation\results\aggregate.json `
+  --csv-output .\Evaluation\results\aggregate.csv
+```
+
+Repeat `--entry` for each recording. Outputs contain only opaque recording IDs,
+splits, numeric metrics, and error counts; they never copy transcript text.

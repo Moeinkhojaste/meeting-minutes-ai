@@ -109,6 +109,17 @@ Run the selected local Persian STT checkpoint:
 Configuration precedence is CLI argument, process environment, `.env`, then
 safe code default. See [configuration](docs/configuration.md).
 
+Validate the private dataset manifest without reading or committing media:
+
+```powershell
+.\.venv\Scripts\python.exe .\ai-service\dataset_manifest.py `
+  .\Datasets\manifest.local.json
+```
+
+The dataset naming, consent, annotation, split-locking, and transcript-free
+aggregate-output rules are documented in the
+[dataset protocol](docs/dataset-protocol.md).
+
 ## Privacy and limitations
 
 - Audio, references, annotations, transcripts, generated evaluation results,

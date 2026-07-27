@@ -359,6 +359,8 @@ paket-files/
 # Meeting Minutes AI local data and generated artifacts
 Datasets/audio/
 Datasets/references/
+Datasets/annotations/
+Datasets/manifest.local.json
 Evaluation/results/
 ai-service/output/
 frontend/dist/
