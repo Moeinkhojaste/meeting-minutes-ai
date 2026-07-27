@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-MODEL_NAME = "small"
+DEFAULT_MODEL_NAME = "small"
+SUPPORTED_MODEL_NAMES = ("small", "medium", "large-v3-turbo")
 LANGUAGE = "fa"
 DEVICE = "cuda"
 COMPUTE_TYPE = "float16"
@@ -40,6 +41,15 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
         help=(
             "Path for the transcript (default: AUDIO_NAME.transcript.txt "
             "beside the audio file)"
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        choices=SUPPORTED_MODEL_NAMES,
+        default=DEFAULT_MODEL_NAME,
+        help=(
+            "Whisper checkpoint used for the controlled STT comparison "
+            f"(default: {DEFAULT_MODEL_NAME})"
         ),
     )
     return parser.parse_args(arguments)
@@ -121,7 +131,11 @@ def verify_cuda_support() -> None:
         )
 
 
-def transcribe(audio_path: Path, output_path: Path) -> None:
+def transcribe(
+    audio_path: Path,
+    output_path: Path,
+    model_name: str = DEFAULT_MODEL_NAME,
+) -> None:
     """Run Persian transcription and write timestamped UTF-8 segments."""
     configure_windows_nvidia_dlls()
 
@@ -136,10 +150,10 @@ def transcribe(audio_path: Path, output_path: Path) -> None:
     verify_cuda_support()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Loading Whisper checkpoint: {MODEL_NAME}")
+    print(f"Loading Whisper checkpoint: {model_name}")
     print(f"Inference device: {DEVICE} ({COMPUTE_TYPE})")
     model = WhisperModel(
-        MODEL_NAME,
+        model_name,
         device=DEVICE,
         compute_type=COMPUTE_TYPE,
     )
@@ -178,7 +192,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
     try:
         validate_audio_path(audio_path)
         validate_output_path(audio_path, output_path)
-        transcribe(audio_path, output_path)
+        transcribe(audio_path, output_path, args.model)
     except RuntimeError as error:
         print(f"Error: {error}", file=sys.stderr)
         print("No CPU fallback was attempted.", file=sys.stderr)

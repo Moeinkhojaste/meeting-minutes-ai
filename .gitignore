@@ -357,6 +357,8 @@ paket-files/
 
 # Meeting Minutes AI local data and generated artifacts
 Datasets/audio/
+Datasets/references/
+Evaluation/results/
 AI-Service/output/
 *.transcript.txt
 models/

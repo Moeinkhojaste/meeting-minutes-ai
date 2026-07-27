@@ -11,14 +11,28 @@ AI_SERVICE_DIRECTORY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(AI_SERVICE_DIRECTORY))
 
 from transcribe import (  # noqa: E402
+    DEFAULT_MODEL_NAME,
     default_output_path,
     format_timestamp,
+    parse_arguments,
     validate_audio_path,
     validate_output_path,
 )
 
 
 class TranscribeHelpersTests(unittest.TestCase):
+    def test_default_model_remains_small(self) -> None:
+        arguments = parse_arguments(["meeting.wav"])
+
+        self.assertEqual(arguments.model, DEFAULT_MODEL_NAME)
+
+    def test_supported_comparison_model_can_be_selected(self) -> None:
+        arguments = parse_arguments(
+            ["meeting.wav", "--model", "large-v3-turbo"]
+        )
+
+        self.assertEqual(arguments.model, "large-v3-turbo")
+
     def test_format_timestamp_includes_milliseconds(self) -> None:
         self.assertEqual(format_timestamp(3_661.234), "01:01:01.234")
 
