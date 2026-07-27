@@ -376,6 +376,10 @@ def _environment_metadata() -> dict[str, object]:
         "commitHash": _command_output(["git", "rev-parse", "HEAD"]),
         "python": platform.python_version(),
         "platform": platform.platform(),
+        "processor": platform.processor() or None,
+        "logicalCpuCount": psutil.cpu_count(logical=True),
+        "physicalCpuCount": psutil.cpu_count(logical=False),
+        "systemRamMiB": psutil.virtual_memory().total / (1024 * 1024),
         "packages": {
             package: _package_version(package)
             for package in (

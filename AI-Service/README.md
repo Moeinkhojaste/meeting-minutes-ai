@@ -5,7 +5,8 @@ file into a UTF-8 text transcript with segment-level timestamps.
 
 It uses:
 
-- the multilingual Whisper `small` checkpoint;
+- the multilingual Whisper `large-v3-turbo` checkpoint selected by the
+  Phase 0 comparison;
 - `faster-whisper` as the Whisper inference implementation;
 - CTranslate2 as the inference engine;
 - NVIDIA CUDA with `float16`;
@@ -36,9 +37,9 @@ python -m venv .venv
 python -m pip install -r .\AI-Service\requirements.txt
 ```
 
-The first successful run downloads the Whisper `small` model files. The model
-download requires internet access, but the meeting audio itself is processed
-locally and is not sent to an external transcription service.
+The first successful run downloads the Whisper `large-v3-turbo` model files.
+The model download requires internet access, but the meeting audio itself is
+processed locally and is not sent to an external transcription service.
 
 If startup reports that a DLL such as `cublas64_12.dll` or a cuDNN DLL cannot
 be loaded, stop and install the matching NVIDIA runtime prerequisites. Do not
@@ -63,8 +64,9 @@ Choose another output location with:
 python .\AI-Service\transcribe.py "D:\path\meeting.mp3" --output ".\AI-Service\output\meeting.txt"
 ```
 
-The default remains Whisper `small`. For a controlled comparison using the
-same audio and reference transcript, select one of the approved checkpoints:
+The default is Whisper `large-v3-turbo`, selected from the Phase 0 controlled
+comparison. To reproduce or extend the comparison using the same audio and
+reference transcript, select one of the approved checkpoints:
 
 ```powershell
 python .\AI-Service\transcribe.py "D:\path\meeting.mp3" `
@@ -82,9 +84,11 @@ data and must not be committed.
 
 ## Current boundary
 
-`small` is a starting baseline, not a claim that it is the best Persian model.
-This prototype does not clean or summarize the transcript, identify speakers,
-extract decisions, generate meeting minutes, or expose an API.
+`large-v3-turbo` is the selected Phase 0 checkpoint for the current machine and
+human-verified sample. The measured normalized WER remains high, so this is a
+baseline decision rather than an accuracy claim. This prototype does not clean
+or summarize the transcript, identify speakers, extract decisions, generate
+meeting minutes, or expose an API.
 
 ## Evaluate WER and CER
 
@@ -163,3 +167,6 @@ normalized CER second, factual/manual Persian quality as a guardrail, and only
 then runtime and resource use. The earlier single-run values used an
 unverified draft reference, so they are provisional diagnostics and are not a
 valid model-selection decision.
+
+The accepted Phase 0 result and its limitations are recorded in
+`docs/phase-0-stt-benchmark.md`.

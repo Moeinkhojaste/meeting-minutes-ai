@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-DEFAULT_MODEL_NAME = "small"
+DEFAULT_MODEL_NAME = "large-v3-turbo"
 SUPPORTED_MODEL_NAMES = ("small", "medium", "large-v3-turbo")
 LANGUAGE = "fa"
 DEVICE = "cuda"
@@ -30,7 +30,8 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description=(
-            "Transcribe a local Persian audio file with Whisper small and "
+            "Transcribe a local Persian audio file with the selected Whisper "
+            "checkpoint and "
             "write segment timestamps to a UTF-8 text file."
         )
     )

@@ -21,10 +21,11 @@ from transcribe import (  # noqa: E402
 
 
 class TranscribeHelpersTests(unittest.TestCase):
-    def test_default_model_remains_small(self) -> None:
+    def test_default_model_is_evidence_selected_checkpoint(self) -> None:
         arguments = parse_arguments(["meeting.wav"])
 
         self.assertEqual(arguments.model, DEFAULT_MODEL_NAME)
+        self.assertEqual(arguments.model, "large-v3-turbo")
 
     def test_supported_comparison_model_can_be_selected(self) -> None:
         arguments = parse_arguments(
