@@ -1,0 +1,32 @@
+name: Backend
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - "tests/backend/**"
+      - "MeetingMinutesAI.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "tests/backend/**"
+      - "MeetingMinutesAI.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - ".github/workflows/backend.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - run: dotnet restore MeetingMinutesAI.slnx
+      - run: dotnet build MeetingMinutesAI.slnx --no-restore
+      - run: dotnet test MeetingMinutesAI.slnx --no-build
+      - run: dotnet format MeetingMinutesAI.slnx --verify-no-changes --no-restore
