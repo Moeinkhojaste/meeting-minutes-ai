@@ -103,43 +103,57 @@ python .\AI-Service\evaluate_transcript.py `
   --output ".\Evaluation\results\sample.small.json"
 ```
 
-The command prints and optionally saves:
+The schema-version-2 result contains two explicitly different scores:
 
-- Word Error Rate (WER);
-- Character Error Rate (CER), excluding whitespace;
-- reference and hypothesis word/character counts;
-- word-level and character-level error counts;
-- the exact `jiwer` version and normalization configuration.
+- raw WER/CER after removing generated timestamp prefixes and trimming only
+  outer whitespace;
+- normalized WER/CER after applying the frozen Persian scoring policy.
 
-Before scoring, the evaluator applies Unicode NFKC normalization, maps Arabic
-`ي`, `ى`, and `ك` to Persian `ی`, `ی`, and `ک`, removes Unicode punctuation,
-turns the Persian zero-width non-joiner into a word boundary, and collapses
-whitespace. It does not rewrite words or numbers. The generated transcript may
-contain the timestamp format produced by `transcribe.py`; those prefixes are
-removed automatically.
+Raw CER includes whitespace. Normalized CER excludes all Unicode whitespace.
+Both metric sets include reference and hypothesis counts plus word-level and
+character-level hits, substitutions, deletions, and insertions. The result also
+records the exact `jiwer` version and scoring metadata.
 
-The JSON result is suitable for copying into the project Experiment Log.
+The raw source files are never modified. When an auditable normalized
+derivative is needed, save it to a separate ignored path:
 
-## Initial checkpoint comparison
+```powershell
+python .\AI-Service\evaluate_transcript.py `
+  ".\Datasets\references\sample.reference.txt" `
+  ".\sample.transcript.txt" `
+  --normalized-reference-output `
+    ".\Datasets\references\sample.reference.normalized.txt" `
+  --normalized-hypothesis-output `
+    ".\Transcripts\sample.normalized.txt"
+```
 
-The first controlled comparison used the same 173.44-second Persian sample,
-locally corrected draft reference, CUDA `float16` configuration, and
-normalization rules for every checkpoint:
+The full normalization policy is documented in
+`docs/persian-normalization-policy.md`.
 
-| Checkpoint | WER | CER | Runtime |
-| --- | ---: | ---: | ---: |
-| `small` | 48.82% | 13.60% | 19.96 s |
-| `medium` | 29.01% | 7.25% | 40.55 s |
-| `large-v3-turbo` | 24.29% | 5.44% | 18.52 s |
+## Controlled checkpoint benchmark
 
-`large-v3-turbo` is the initial checkpoint because it produced the lowest WER
-and CER and the shortest runtime on the available RTX 3060 Laptop GPU. This is
-a provisional single-sample decision, not a final quality claim. The draft
-reference must first be independently checked by listening to the complete
-audio. Then repeat the comparison on the fixed 5–10-sample development set
-before final model selection.
+Do not benchmark against a draft reference. The runner refuses to start unless
+the reference has been independently verified by listening and
+`--reference-verified` is passed:
 
-Peak VRAM is not reported for these runs because `nvidia-smi` returned
-unavailable or zero memory values under Windows WDDM. All three checkpoints
-did complete successfully on the 6 GB GPU; a future benchmark should use a
-reliable VRAM measurement method.
+```powershell
+python .\AI-Service\benchmark_stt.py `
+  ".\private-sample.wav" `
+  ".\Datasets\references\sample.verified-reference.txt" `
+  --dataset-version "persian-dev-v1" `
+  --reference-verified `
+  --output ".\Evaluation\results\persian-dev-v1.checkpoints.json"
+```
+
+For each of `small`, `medium`, and `large-v3-turbo`, the runner performs one
+warm-up followed by three measured CUDA `float16` runs. It records raw and
+normalized WER/CER, runtime variation, real-time factor, peak process RAM,
+device-level VRAM when available, failures, dependency and hardware metadata,
+the dataset version, and the current commit. Private paths and transcript text
+are not included in the aggregate result.
+
+Checkpoint selection remains a manual gate. Rank normalized WER first,
+normalized CER second, factual/manual Persian quality as a guardrail, and only
+then runtime and resource use. The earlier single-run values used an
+unverified draft reference, so they are provisional diagnostics and are not a
+valid model-selection decision.

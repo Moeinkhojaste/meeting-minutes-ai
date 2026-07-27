@@ -12,7 +12,7 @@ from typing import Sequence
 
 from jiwer import process_characters, process_words
 
-from persian_text import normalize_persian_text, remove_whitespace
+from persian_text import create_text_variants, remove_whitespace
 
 TIMESTAMP_PREFIX_PATTERN = re.compile(
     r"^\s*\[\d{2}:\d{2}:\d{2}(?:\.\d{3})?"
@@ -44,6 +44,16 @@ def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespac
         type=Path,
         help="Optional path for the JSON result",
     )
+    parser.add_argument(
+        "--normalized-reference-output",
+        type=Path,
+        help="Optional path for the derived normalized reference text",
+    )
+    parser.add_argument(
+        "--normalized-hypothesis-output",
+        type=Path,
+        help="Optional path for the derived normalized hypothesis text",
+    )
     return parser.parse_args(arguments)
 
 
@@ -56,22 +66,23 @@ def strip_segment_timestamps(text: str) -> str:
 
 
 def calculate_metrics(reference: str, hypothesis: str) -> dict[str, object]:
-    """Normalize two transcripts and return reproducible WER/CER details."""
-    normalized_reference = normalize_persian_text(reference)
-    normalized_hypothesis = normalize_persian_text(
-        strip_segment_timestamps(hypothesis)
+    """Return raw and normalized WER/CER without mutating either input."""
+    raw_hypothesis = strip_segment_timestamps(hypothesis)
+    reference_variants = create_text_variants(reference)
+    hypothesis_variants = create_text_variants(raw_hypothesis)
+    raw = _calculate_metric_set(
+        reference_variants.raw.strip(),
+        hypothesis_variants.raw.strip(),
+        exclude_character_whitespace=False,
     )
-    reference_characters = remove_whitespace(normalized_reference)
-    hypothesis_characters = remove_whitespace(normalized_hypothesis)
-
-    word_result = process_words(normalized_reference, normalized_hypothesis)
-    character_result = process_characters(
-        reference_characters,
-        hypothesis_characters,
+    normalized = _calculate_metric_set(
+        reference_variants.normalized,
+        hypothesis_variants.normalized,
+        exclude_character_whitespace=True,
     )
 
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "library": {
             "name": "jiwer",
             "version": version("jiwer"),
@@ -79,32 +90,90 @@ def calculate_metrics(reference: str, hypothesis: str) -> dict[str, object]:
         "normalization": {
             "unicodeForm": "NFKC",
             "arabicToPersianCharacters": ["ي→ی", "ى→ی", "ك→ک"],
-            "punctuationRemoved": True,
+            "arabicDiacriticsRemoved": True,
+            "tatweelRemoved": True,
+            "punctuationAsSpace": True,
             "zeroWidthNonJoinerAsSpace": True,
             "whitespaceCollapsed": True,
-            "cerWhitespaceExcluded": True,
+            "latinLowercased": True,
+            "persianAndArabicDigitsToAscii": True,
+            "spokenNumbersRewritten": False,
         },
+        "metrics": {
+            "raw": raw["metrics"],
+            "normalized": normalized["metrics"],
+        },
+        "counts": {
+            "raw": raw["counts"],
+            "normalized": normalized["counts"],
+        },
+        "errors": {
+            "raw": raw["errors"],
+            "normalized": normalized["errors"],
+        },
+        "scoring": {
+            "raw": {
+                "timestampPrefixesRemoved": True,
+                "outerWhitespaceTrimmed": True,
+                "contentNormalized": False,
+                "cerWhitespaceExcluded": False,
+            },
+            "normalized": {
+                "timestampPrefixesRemoved": True,
+                "policyApplied": True,
+                "cerWhitespaceExcluded": True,
+            },
+        },
+    }
+
+
+def _calculate_metric_set(
+    reference: str,
+    hypothesis: str,
+    *,
+    exclude_character_whitespace: bool,
+) -> dict[str, object]:
+    """Calculate one internally consistent WER/CER metric set."""
+    reference_characters = (
+        remove_whitespace(reference)
+        if exclude_character_whitespace
+        else reference
+    )
+    hypothesis_characters = (
+        remove_whitespace(hypothesis)
+        if exclude_character_whitespace
+        else hypothesis
+    )
+    word_result = process_words(reference, hypothesis)
+    character_result = process_characters(
+        reference_characters,
+        hypothesis_characters,
+    )
+
+    return {
         "metrics": {
             "wer": word_result.wer,
             "cer": character_result.cer,
         },
         "counts": {
-            "referenceWords": len(normalized_reference.split()),
-            "hypothesisWords": len(normalized_hypothesis.split()),
+            "referenceWords": len(reference.split()),
+            "hypothesisWords": len(hypothesis.split()),
             "referenceCharacters": len(reference_characters),
             "hypothesisCharacters": len(hypothesis_characters),
         },
-        "wordErrors": {
-            "hits": word_result.hits,
-            "substitutions": word_result.substitutions,
-            "deletions": word_result.deletions,
-            "insertions": word_result.insertions,
-        },
-        "characterErrors": {
-            "hits": character_result.hits,
-            "substitutions": character_result.substitutions,
-            "deletions": character_result.deletions,
-            "insertions": character_result.insertions,
+        "errors": {
+            "words": {
+                "hits": word_result.hits,
+                "substitutions": word_result.substitutions,
+                "deletions": word_result.deletions,
+                "insertions": word_result.insertions,
+            },
+            "characters": {
+                "hits": character_result.hits,
+                "substitutions": character_result.substitutions,
+                "deletions": character_result.deletions,
+                "insertions": character_result.insertions,
+            },
         },
     }
 
@@ -120,6 +189,26 @@ def evaluate_files(
         reference_path.read_text(encoding="utf-8"),
         hypothesis_path.read_text(encoding="utf-8"),
     )
+
+
+def write_normalized_text(
+    source_path: Path,
+    output_path: Path,
+    *,
+    remove_timestamps: bool,
+) -> None:
+    """Write a normalized derivative while leaving the raw source unchanged."""
+    resolved_source = source_path.resolve()
+    resolved_output = output_path.expanduser().resolve()
+    if resolved_output == resolved_source:
+        raise ValueError("Normalized output cannot overwrite its raw source.")
+
+    raw_text = resolved_source.read_text(encoding="utf-8")
+    if remove_timestamps:
+        raw_text = strip_segment_timestamps(raw_text)
+    normalized_text = create_text_variants(raw_text).normalized
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
+    resolved_output.write_text(normalized_text + "\n", encoding="utf-8")
 
 
 def _validate_text_file(path: Path, label: str) -> None:
@@ -149,6 +238,18 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 encoding="utf-8",
             )
             print(f"Result saved to: {output_path}")
+        if args.normalized_reference_output:
+            write_normalized_text(
+                reference_path,
+                args.normalized_reference_output,
+                remove_timestamps=False,
+            )
+        if args.normalized_hypothesis_output:
+            write_normalized_text(
+                hypothesis_path,
+                args.normalized_hypothesis_output,
+                remove_timestamps=True,
+            )
     except (OSError, UnicodeError, ValueError) as error:
         print(f"Error: {error}")
         return 1
