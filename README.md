@@ -2,12 +2,11 @@
 
 Persian title: **سامانه هوشمند تولید صورت‌جلسه**
 
-Meeting Minutes AI is a privacy-first university MVP for converting permitted
-Persian or English meeting audio into an editable transcript and structured
-meeting minutes. The current repository contains the verified Persian STT
-baseline and the buildable Phase 1 project foundations. Product upload,
-processing, editing, authentication, and export features intentionally belong
-to later phases.
+Meeting Minutes AI is a university MVP for converting Persian or English
+meeting audio into an editable transcript and structured meeting minutes.
+Phase 3 adds a Gemini-first Python AI service while preserving the verified
+local CUDA/faster-whisper baseline as transcription fallback and scientific
+comparator.
 
 ## Repository structure
 
@@ -27,7 +26,6 @@ docs/        Charter, setup, evaluation, and technical documentation
 - FFmpeg/FFprobe 8.1.2
 - Git 2.50.1 for Windows
 - NVIDIA driver 596.49; CUDA-capable RTX 3060 Laptop GPU
-- Ollama 0.32.4
 
 See [development setup](docs/development-setup.md) for installation,
 verification, and troubleshooting.
@@ -109,6 +107,18 @@ Run the selected local Persian STT checkpoint:
 Configuration precedence is CLI argument, process environment, `.env`, then
 safe code default. See [configuration](docs/configuration.md).
 
+Run the Phase 3 AI service:
+
+```powershell
+Push-Location .\ai-service
+..\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+Pop-Location
+```
+
+The AI service exposes `/health/live`, `/health/ready`,
+`/v1/transcriptions`, `/v1/minutes`, and `/v1/process`. See the
+[AI-service API](docs/ai-service-api.md).
+
 Validate the private dataset manifest without reading or committing media:
 
 ```powershell
@@ -122,15 +132,19 @@ aggregate-output rules are documented in the
 
 ## Privacy and limitations
 
-- Audio, references, annotations, transcripts, generated evaluation results,
-  model files, secrets, and `.env` files stay local and ignored.
-- No recording or transcript is sent to an external service by default.
+- Local copies of audio, references, annotations, transcripts, generated
+  evaluation results, model files, secrets, and `.env` files remain ignored.
+  Audio and transcripts leave the machine when sent to Gemini.
+- Every accepted meeting is sent to Gemini first, including private meetings.
+  The free Gemini tier may process or retain data under Google's current terms.
+- faster-whisper is only a technical transcription fallback. Transcript
+  cleaning and minutes generation have no local fallback in Phase 3.
 - Only generated or explicitly permitted anonymized fixtures may be committed.
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository does not yet implement production features, deployment,
-  authentication, or data persistence.
+- The repository does not yet implement deployment, authentication, product
+  persistence, export, or a review UI.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).

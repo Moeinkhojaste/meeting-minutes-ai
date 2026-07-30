@@ -363,6 +363,7 @@ Datasets/annotations/
 Datasets/manifest.local.json
 Evaluation/results/
 ai-service/output/
+ai-service/cache/
 frontend/dist/
 .pytest_cache/
 .ruff_cache/

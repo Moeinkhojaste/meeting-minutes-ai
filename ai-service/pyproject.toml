@@ -14,8 +14,10 @@ python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 files = [
+  "app",
   "aggregate_evaluations.py",
   "dataset_manifest.py",
+  "evaluate_pipeline.py",
   "persian_text.py",
   "settings.py",
 ]

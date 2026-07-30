@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from settings import (
@@ -30,6 +31,16 @@ SUPPORTED_AUDIO_EXTENSIONS = {
     ".wma",
 }
 DLL_DIRECTORY_HANDLES: list[object] = []
+
+
+@dataclass(frozen=True)
+class TranscribedSegment:
+    """A provider-neutral faster-whisper segment."""
+
+    start_seconds: float
+    end_seconds: float
+    text: str
+    language: str
 
 
 def parse_arguments(arguments: Sequence[str] | None = None) -> argparse.Namespace:
@@ -115,7 +126,9 @@ def configure_windows_nvidia_dlls() -> None:
     )
     for dll_directory in dll_directories:
         if dll_directory.is_dir():
-            DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(dll_directory))
+            DLL_DIRECTORY_HANDLES.append(
+                os.add_dll_directory(str(dll_directory))
+            )
 
 
 def verify_cuda_support() -> None:
@@ -150,6 +163,31 @@ def transcribe(
     model_name: str = DEFAULT_MODEL_NAME,
 ) -> None:
     """Run Persian transcription and write timestamped UTF-8 segments."""
+    segments = transcribe_segments(audio_path, model_name)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    transcript_lines = [
+        (
+            f"[{format_timestamp(segment.start_seconds)} --> "
+            f"{format_timestamp(segment.end_seconds)}] {segment.text}"
+        )
+        for segment in segments
+    ]
+
+    output_path.write_text(
+        "\n".join(transcript_lines) + ("\n" if transcript_lines else ""),
+        encoding="utf-8",
+    )
+    language = segments[0].language if segments else LANGUAGE
+    print(f"Language: {language}")
+    print(f"Transcript saved to: {output_path.resolve()}")
+
+
+def transcribe_segments(
+    audio_path: Path,
+    model_name: str = DEFAULT_MODEL_NAME,
+) -> list[TranscribedSegment]:
+    """Run faster-whisper and return structured segments without writing."""
     configure_windows_nvidia_dlls()
 
     try:
@@ -161,8 +199,6 @@ def transcribe(
         ) from error
 
     verify_cuda_support()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
     print(f"Loading Whisper checkpoint: {model_name}")
     print(f"Inference device: {DEVICE} ({COMPUTE_TYPE})")
     model = WhisperModel(
@@ -177,19 +213,19 @@ def transcribe(
         task="transcribe",
     )
 
-    transcript_lines = []
+    transcript_segments: list[TranscribedSegment] = []
     for segment in segments:
-        start = format_timestamp(segment.start)
-        end = format_timestamp(segment.end)
         text = segment.text.strip()
-        transcript_lines.append(f"[{start} --> {end}] {text}")
-
-    output_path.write_text(
-        "\n".join(transcript_lines) + ("\n" if transcript_lines else ""),
-        encoding="utf-8",
-    )
-    print(f"Language: {info.language}")
-    print(f"Transcript saved to: {output_path.resolve()}")
+        if text:
+            transcript_segments.append(
+                TranscribedSegment(
+                    start_seconds=float(segment.start),
+                    end_seconds=float(segment.end),
+                    text=text,
+                    language=str(info.language or LANGUAGE),
+                )
+            )
+    return transcript_segments
 
 
 def main(arguments: Sequence[str] | None = None) -> int:

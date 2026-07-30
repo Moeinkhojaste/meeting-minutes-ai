@@ -10,7 +10,6 @@
 | .NET SDK | 10.0.302 LTS |
 | FFmpeg and FFprobe | 8.1.2 |
 | Git for Windows | 2.50.1 |
-| Ollama | 0.32.4 |
 | NVIDIA driver | 596.49 |
 | Driver-reported CUDA capability | 13.2 |
 | Python CUDA 12 cuBLAS wheel | 12.9.2.10 |
@@ -24,7 +23,6 @@ CUDA 12 cuBLAS and cuDNN 8 runtime libraries from `.venv`.
 
 - .NET SDK: Microsoft `dotnet-install.ps1`, version 10.0.302
 - FFmpeg: Gyan full build 8.1.2 linked from ffmpeg.org
-- Ollama: official Windows installer 0.32.4
 
 After installing user-level tools, open a new PowerShell window so the updated
 user `PATH` is visible.
@@ -40,7 +38,6 @@ ffmpeg -version
 ffprobe -version
 git --version
 nvidia-smi
-ollama --version
 ```
 
 Then follow the setup and quality commands in the root README.
@@ -52,10 +49,19 @@ Then follow the setup and quality commands in the root README.
 Run `dotnet --list-sdks` and confirm 10.0.302 is visible. `global.json` selects
 that SDK. Open a new terminal if the user-local SDK path was just added.
 
-### FFmpeg or Ollama is not found
+### FFmpeg is not found
 
 Open a new terminal and inspect the user `PATH`. FFmpeg's versioned `bin`
-directory and `%LOCALAPPDATA%\Programs\Ollama` must be present.
+directory must be present.
+
+### Gemini is unavailable
+
+Keep `GEMINI_API_KEY` only in the ignored `.env` file or process environment.
+Missing keys, regional restrictions, authentication failures, quota errors,
+timeouts, safety blocks, and invalid Gemini transcription output trigger the
+existing local CUDA transcription fallback. Cleaning and minutes generation
+return a controlled provider error because Phase 3 deliberately has no local
+LLM.
 
 ### CUDA is visible but transcription fails
 

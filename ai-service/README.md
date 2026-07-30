@@ -1,4 +1,38 @@
-# Persian Transcription Prototype
+# AI Service
+
+Phase 3 exposes a FastAPI and CLI pipeline with two modes:
+
+- `fast`: `gemini-3.5-flash-lite`, with local Whisper `small` STT fallback;
+- `quality`: `gemini-3.6-flash`, with local Whisper `large-v3-turbo` STT
+  fallback.
+
+The workflow uses two independent stages. Gemini is attempted once for raw
+transcription. Eligible Gemini failures fall back once to the existing
+CUDA/faster-whisper implementation. The raw transcript is then sent to Gemini
+once for cleaning and structured minutes. Stage two has no local LLM fallback.
+Qwen, Ollama, and other local LLM runtimes are explicitly deferred.
+
+## Run the API
+
+```powershell
+Push-Location .\ai-service
+..\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+Pop-Location
+```
+
+## Run the Phase 3 CLI
+
+```powershell
+Push-Location .\ai-service
+..\.venv\Scripts\python.exe -m app.cli process `
+  "D:\path\meeting.wav" --mode fast --output ".\output\result.json"
+Pop-Location
+```
+
+The other commands are `transcribe` and `minutes`. A partial `process` result
+preserves the raw transcript and exits with code 2 when Gemini stage two fails.
+
+## Existing local transcription tool
 
 This first prototype performs one task only: it converts a local Persian audio
 file into a UTF-8 text transcript with segment-level timestamps.
@@ -82,13 +116,13 @@ Supported input extensions are `.aac`, `.flac`, `.m4a`, `.mp3`, `.ogg`,
 `.wav`, `.webm`, and `.wma`. The audio file and generated transcript are local
 data and must not be committed.
 
-## Current boundary
+## Local transcription boundary
 
 `large-v3-turbo` is the selected Phase 0 checkpoint for the current machine and
 human-verified sample. The measured normalized WER remains high, so this is a
-baseline decision rather than an accuracy claim. This prototype does not clean
-or summarize the transcript, identify speakers, extract decisions, generate
-meeting minutes, or expose an API.
+baseline decision rather than an accuracy claim. The standalone
+`transcribe.py` prototype does not clean or summarize the transcript. Those
+responsibilities belong to the Phase 3 API and CLI.
 
 ## Evaluate WER and CER
 
