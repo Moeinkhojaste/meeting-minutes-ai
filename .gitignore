@@ -353,6 +353,25 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 **/__pycache__/
 *.pyc
+.venv/
+
+# Meeting Minutes AI local data and generated artifacts
+Datasets/audio/
+Datasets/references/
+Evaluation/results/
+AI-Service/output/
+*.transcript.txt
+models/
+
+# Local recordings placed in the repository root
+/*.aac
+/*.flac
+/*.m4a
+/*.mp3
+/*.ogg
+/*.wav
+/*.webm
+/*.wma
 
 # Cake - Uncomment if you are using it
 #tools/**
