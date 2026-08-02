@@ -1,9 +1,14 @@
 <Solution>
   <Folder Name="/backend/">
+    <Project Path="backend/MeetingMinutesAI.Application/MeetingMinutesAI.Application.csproj" />
     <Project Path="backend/MeetingMinutesAI.Api/MeetingMinutesAI.Api.csproj" />
+    <Project Path="backend/MeetingMinutesAI.Domain/MeetingMinutesAI.Domain.csproj" />
+    <Project Path="backend/MeetingMinutesAI.Infrastructure/MeetingMinutesAI.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/backend/">
     <Project Path="tests/backend/MeetingMinutesAI.Api.Tests/MeetingMinutesAI.Api.Tests.csproj" />
+    <Project Path="tests/backend/MeetingMinutesAI.Domain.Tests/MeetingMinutesAI.Domain.Tests.csproj" />
+    <Project Path="tests/backend/MeetingMinutesAI.Infrastructure.Tests/MeetingMinutesAI.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

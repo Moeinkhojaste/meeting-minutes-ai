@@ -25,6 +25,7 @@ ignored and must never be committed.
 | Variable | Safe default | Purpose |
 | --- | --- | --- |
 | `ASPNETCORE_URLS` | `http://localhost:5080` | Backend listen URL |
+| `ConnectionStrings__DefaultConnection` | LocalDB in development | SQL Server connection string override |
 | `VITE_API_BASE_URL` | `http://localhost:5080` | Frontend backend URL |
 | `MM_AI_STT_MODEL` | `large-v3-turbo` | Selected Whisper checkpoint |
 | `MM_AI_DEVICE` | `cuda` | Required STT device |
@@ -43,3 +44,9 @@ ignored and must never be committed.
 There is no CPU fallback. An invalid device or missing CUDA runtime must produce
 a controlled local-STT failure. There are intentionally no local-minutes model
 settings in Phase 3; Qwen and other local LLMs are deferred.
+
+The committed development configuration uses the installed
+`(localdb)\MSSQLLocalDB` instance and database `MeetingMinutesAI`. Production
+has no connection-string fallback and must provide
+`ConnectionStrings__DefaultConnection`. The application never applies EF Core
+migrations automatically during startup.

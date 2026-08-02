@@ -12,7 +12,7 @@ comparator.
 
 ```text
 frontend/    React, TypeScript, and Vite foundation
-backend/     ASP.NET Core API foundation
+backend/     ASP.NET Core Clean Architecture backend and SQL Server persistence
 ai-service/  Python STT evaluation and transcription tools
 tests/       Cross-project and backend tests
 docs/        Charter, setup, evaluation, and technical documentation
@@ -51,6 +51,7 @@ python -m pip install -r .\ai-service\requirements-dev.txt
 Restore the backend and frontend:
 
 ```powershell
+dotnet tool restore
 dotnet restore .\MeetingMinutesAI.slnx
 Set-Location .\frontend
 npm ci
@@ -81,6 +82,20 @@ Pop-Location
 ```
 
 ## Run the foundations
+
+Apply the committed SQL Server migration to the LocalDB development database:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet tool run dotnet-ef database update `
+  --project .\backend\MeetingMinutesAI.Infrastructure `
+  --startup-project .\backend\MeetingMinutesAI.Api `
+  --context MeetingMinutesDbContext
+```
+
+The backend uses enforced Domain, Application, Infrastructure, and API
+projects. See [backend architecture](docs/backend-architecture.md) for the
+dependency rules, persistence model, and migration workflow.
 
 ```powershell
 dotnet run --project .\backend\MeetingMinutesAI.Api
@@ -143,8 +158,9 @@ aggregate-output rules are documented in the
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository does not yet implement deployment, authentication, product
-  persistence, export, or a review UI.
+- The repository now contains meeting persistence and its initial migration,
+  but it does not yet implement meeting CRUD endpoints, authentication,
+  deployment, export, or a review UI.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).

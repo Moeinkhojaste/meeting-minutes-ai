@@ -8,6 +8,7 @@ on:
       - "MeetingMinutesAI.slnx"
       - "global.json"
       - "Directory.Build.props"
+      - ".config/dotnet-tools.json"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - "MeetingMinutesAI.slnx"
       - "global.json"
       - "Directory.Build.props"
+      - ".config/dotnet-tools.json"
       - ".github/workflows/backend.yml"
 
 jobs:

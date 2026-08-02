@@ -8,6 +8,8 @@
 | Node.js | 24.18.0 LTS |
 | npm | 11.17.0 |
 | .NET SDK | 10.0.302 LTS |
+| EF Core CLI | 10.0.10 repository-local tool |
+| SQL Server | MSSQLLocalDB development instance |
 | FFmpeg and FFprobe | 8.1.2 |
 | Git for Windows | 2.50.1 |
 | NVIDIA driver | 596.49 |
@@ -34,6 +36,8 @@ python --version
 node --version
 npm --version
 dotnet --version
+dotnet tool restore
+sqllocaldb info MSSQLLocalDB
 ffmpeg -version
 ffprobe -version
 git --version
@@ -48,6 +52,19 @@ Then follow the setup and quality commands in the root README.
 
 Run `dotnet --list-sdks` and confirm 10.0.302 is visible. `global.json` selects
 that SDK. Open a new terminal if the user-local SDK path was just added.
+
+### EF Core uses the wrong tool version
+
+Run `dotnet tool restore` at the repository root and invoke migrations with
+`dotnet tool run dotnet-ef`. Do not use an older globally installed
+`dotnet-ef`; the backend packages and migration tooling are pinned to 10.0.10.
+
+### LocalDB is unavailable
+
+Install SQL Server LocalDB or override
+`ConnectionStrings__DefaultConnection` with another SQL Server connection.
+The default development database is `MeetingMinutesAI`; migrations are applied
+explicitly and never during API startup.
 
 ### FFmpeg is not found
 

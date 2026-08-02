@@ -20,5 +20,12 @@ Transcript cleaning and meeting-minutes generation always require Gemini.
 - Recordings, transcripts, outputs, references, and evaluation results remain
   ignored and must not be committed.
 
+The backend database retains meeting metadata, raw and cleaned transcript
+segments, generated minutes, an optional user-finalized copy, evidence links,
+and processing metadata until the meeting is explicitly deleted. The initial
+schema stores only an opaque storage key for audio; audio bytes remain outside
+SQL Server. A later deletion use case must remove that external audio object as
+well as the database aggregate. There is no automatic expiry or soft deletion.
+
 Remote deletion is best-effort. A failed delete cannot guarantee immediate
 removal by the remote service; provider retention rules still apply.

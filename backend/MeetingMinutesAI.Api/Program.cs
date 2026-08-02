@@ -1,6 +1,7 @@
 using MeetingMinutesAI.Api.Configuration;
 using MeetingMinutesAI.Api.Errors;
 using MeetingMinutesAI.Api.Middleware;
+using MeetingMinutesAI.Infrastructure;
 
 DotEnvLoader.LoadWithoutOverwritingEnvironment(
     Path.Combine(Directory.GetCurrentDirectory(), ".env")
@@ -19,6 +20,7 @@ builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<SafeExceptionHandler>();
 builder.Services.AddHealthChecks();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
