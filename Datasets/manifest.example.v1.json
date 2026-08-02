@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "generated-fixture-v1",
+  "status": "locked",
+  "privacy": {
+    "containsPrivateData": false,
+    "mediaCommitted": false,
+    "transcriptsCommitted": false
+  },
+  "recordings": [
+    {
+      "recordingId": "fixture-dev-clean",
+      "sourceType": "generated",
+      "speechStyle": "read",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000001",
+      "audio": {"format": "wav", "durationSeconds": 30, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 1, "languages": ["fa"], "accents": ["standard"], "overlap": "none"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "clean"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "development",
+      "locked": false
+    },
+    {
+      "recordingId": "fixture-dev-noisy",
+      "sourceType": "generated",
+      "speechStyle": "monologue",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000002",
+      "audio": {"format": "wav", "durationSeconds": 35, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 1, "languages": ["fa"], "accents": ["standard"], "overlap": "none"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "heavy"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "development",
+      "locked": false
+    },
+    {
+      "recordingId": "fixture-dev-conversation",
+      "sourceType": "generated",
+      "speechStyle": "conversational",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000003",
+      "audio": {"format": "wav", "durationSeconds": 45, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 2, "languages": ["fa"], "accents": ["standard"], "overlap": "light"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "light"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "development",
+      "locked": false
+    },
+    {
+      "recordingId": "fixture-dev-accent",
+      "sourceType": "generated",
+      "speechStyle": "monologue",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000004",
+      "audio": {"format": "wav", "durationSeconds": 40, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 1, "languages": ["fa"], "accents": ["regional-fixture"], "overlap": "none"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "moderate"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "development",
+      "locked": false
+    },
+    {
+      "recordingId": "fixture-dev-overlap",
+      "sourceType": "generated",
+      "speechStyle": "conversational",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000005",
+      "audio": {"format": "wav", "durationSeconds": 50, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 3, "languages": ["fa"], "accents": ["mixed-fixture"], "overlap": "material"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "moderate"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "development",
+      "locked": false
+    },
+    {
+      "recordingId": "fixture-final-clean",
+      "sourceType": "generated",
+      "speechStyle": "read",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000006",
+      "audio": {"format": "wav", "durationSeconds": 30, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 1, "languages": ["fa"], "accents": ["standard"], "overlap": "none"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "clean"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "final-test",
+      "locked": true
+    },
+    {
+      "recordingId": "fixture-final-conversation",
+      "sourceType": "generated",
+      "speechStyle": "conversational",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000007",
+      "audio": {"format": "wav", "durationSeconds": 45, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 2, "languages": ["fa"], "accents": ["standard"], "overlap": "light"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "light"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "final-test",
+      "locked": true
+    },
+    {
+      "recordingId": "fixture-final-overlap",
+      "sourceType": "generated",
+      "speechStyle": "conversational",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000008",
+      "audio": {"format": "wav", "durationSeconds": 55, "sampleRateHz": 16000, "channels": 1},
+      "speakers": {"count": 3, "languages": ["fa"], "accents": ["mixed-fixture"], "overlap": "material"},
+      "capture": {"microphone": "synthetic-fixture", "noise": "moderate"},
+      "rights": {"consentDocumented": true, "consentRecord": "not-required-generated", "usageRights": "redistributable-generated", "publicationStatus": "redistributable"},
+      "annotations": {"referenceVerified": true, "timestampsVerified": true, "speakersVerified": true},
+      "split": "final-test",
+      "locked": true
+    }
+  ]
+}
