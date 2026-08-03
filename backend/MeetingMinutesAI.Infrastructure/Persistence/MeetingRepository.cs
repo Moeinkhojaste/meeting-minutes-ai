@@ -46,6 +46,21 @@ internal sealed class MeetingRepository : IMeetingRepository
             .AsSplitQuery()
             .SingleOrDefaultAsync(meeting => meeting.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<Meeting>> ListAsync(
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        await _context.Meetings
+            .AsNoTracking()
+            .OrderByDescending(meeting => meeting.UpdatedAt)
+            .ThenByDescending(meeting => meeting.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
+        _context.Meetings.CountAsync(cancellationToken);
+
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default) =>
         _context.Meetings.AddAsync(meeting, cancellationToken).AsTask();
 

@@ -31,6 +31,22 @@ foreign keys use SQL Server `NO ACTION` to avoid multiple cascade paths. Audio
 bytes are external and represented only by an opaque storage key, so the later
 deletion use case must remove the external object explicitly.
 
+## Meeting CRUD API
+
+The API exposes create, paged list, get, title update, and delete operations at
+`/api/meetings`. API contracts are separate from persistence entities. Every
+response includes the current lower-camel-case processing status and an opaque
+Base64 row-version token; single-resource responses also return that token as
+a quoted `ETag`.
+
+`PUT` and `DELETE` require the current `ETag` in `If-Match`. A missing header
+returns `428`, a malformed token returns `400`, and a stale token returns
+`409`. Status is read-only through CRUD and can change only through aggregate
+workflow operations. Deletion returns `409` for `Queued`, `Transcribing`, and
+`GeneratingMinutes` meetings. Until an audio-storage adapter is implemented,
+deletion removes the database aggregate but does not claim to remove an
+external audio object.
+
 ## Migration workflow
 
 Restore the pinned EF Core 10.0.10 tool, then use Infrastructure as the

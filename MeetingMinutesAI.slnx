@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/backend/">
+    <Project Path="tests/backend/MeetingMinutesAI.Application.Tests/MeetingMinutesAI.Application.Tests.csproj" />
     <Project Path="tests/backend/MeetingMinutesAI.Api.Tests/MeetingMinutesAI.Api.Tests.csproj" />
     <Project Path="tests/backend/MeetingMinutesAI.Domain.Tests/MeetingMinutesAI.Domain.Tests.csproj" />
     <Project Path="tests/backend/MeetingMinutesAI.Infrastructure.Tests/MeetingMinutesAI.Infrastructure.Tests.csproj" />

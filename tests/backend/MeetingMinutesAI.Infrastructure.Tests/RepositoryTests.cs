@@ -48,6 +48,34 @@ public sealed class RepositoryTests
 
         await using var verificationContext = new MeetingMinutesDbContext(options);
         Assert.False(await verificationContext.Meetings.AnyAsync());
+        Assert.False(await verificationContext.AudioFiles.AnyAsync());
+    }
+
+    [Fact]
+    public async Task RepositoryListsMeetingsInDeterministicPages()
+    {
+        var databaseName = $"repository-page-{Guid.NewGuid():N}";
+        var options = new DbContextOptionsBuilder<MeetingMinutesDbContext>()
+            .UseInMemoryDatabase(databaseName)
+            .Options;
+        var now = DateTimeOffset.UtcNow;
+
+        await using (var writeContext = new MeetingMinutesDbContext(options))
+        {
+            writeContext.Meetings.AddRange(
+                Meeting.Create("Oldest", now),
+                Meeting.Create("Newest", now.AddMinutes(2)),
+                Meeting.Create("Middle", now.AddMinutes(1)));
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = new MeetingMinutesDbContext(options);
+        var repository = new MeetingRepository(readContext);
+
+        var page = await repository.ListAsync(1, 1);
+
+        Assert.Equal(3, await repository.CountAsync());
+        Assert.Equal("Middle", Assert.Single(page).Title);
     }
 
     [Fact]

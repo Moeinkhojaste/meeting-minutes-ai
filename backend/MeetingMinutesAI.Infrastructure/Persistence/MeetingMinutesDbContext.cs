@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeetingMinutesAI.Infrastructure.Persistence;
 
-public sealed class MeetingMinutesDbContext : DbContext, IUnitOfWork
+public class MeetingMinutesDbContext : DbContext, IUnitOfWork
 {
     public MeetingMinutesDbContext(DbContextOptions<MeetingMinutesDbContext> options)
         : base(options)
@@ -24,5 +24,18 @@ public sealed class MeetingMinutesDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(MeetingMinutesDbContext).Assembly);
+    }
+
+    async Task<int> IUnitOfWork.SaveChangesAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new PersistenceConcurrencyException(exception);
+        }
     }
 }

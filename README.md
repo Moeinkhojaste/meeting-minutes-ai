@@ -105,6 +105,18 @@ The backend exposes:
 
 - `GET /health/live`
 - `GET /health/ready`
+- `POST /api/meetings`
+- `GET /api/meetings?page=1&pageSize=20`
+- `GET /api/meetings/{id}`
+- `PUT /api/meetings/{id}`
+- `DELETE /api/meetings/{id}`
+
+Meeting responses expose the explicit processing status as a lower-camel-case
+string. Updates and deletes require the current quoted `ETag` in an
+`If-Match` header; stale versions return `409 Conflict`. Deletion is rejected
+while a meeting is queued, transcribing, or generating minutes. The current
+delete operation removes the database aggregate only because external audio
+storage is not implemented yet.
 
 Run the frontend separately:
 
@@ -158,9 +170,9 @@ aggregate-output rules are documented in the
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository now contains meeting persistence and its initial migration,
-  but it does not yet implement meeting CRUD endpoints, authentication,
-  deployment, export, or a review UI.
+- The repository now contains meeting persistence, its initial migration, and
+  meeting CRUD endpoints, but it does not yet implement authentication,
+  deployment, export, audio storage, processing orchestration, or a review UI.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).
