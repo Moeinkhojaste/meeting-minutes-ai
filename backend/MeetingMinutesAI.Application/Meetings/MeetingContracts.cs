@@ -8,9 +8,18 @@ public sealed record MeetingView(
     MeetingProcessingStatus Status,
     string? ProcessingErrorCode,
     string? ProcessingErrorMessage,
+    AudioView? Audio,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     byte[] Version
+);
+
+public sealed record AudioView(
+    string OriginalFileName,
+    string ContentType,
+    long ByteLength,
+    long? DurationMilliseconds,
+    DateTimeOffset UploadedAt
 );
 
 public sealed record MeetingPage(

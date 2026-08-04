@@ -1,4 +1,5 @@
 using MeetingMinutesAI.Application.Abstractions.Persistence;
+using MeetingMinutesAI.Application.Abstractions.Ai;
 using MeetingMinutesAI.Domain.Meetings;
 using MeetingMinutesAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +14,10 @@ namespace MeetingMinutesAI.Api.Tests;
 public sealed class MeetingApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
+    private readonly string _storageRoot = Path.Combine(
+        Path.GetTempPath(), "MeetingMinutesAI.Api.Tests", Guid.NewGuid().ToString("N"));
+
+    public TestAiServiceClient AiClient { get; } = new();
 
     public MeetingApiFactory()
     {
@@ -22,11 +27,14 @@ public sealed class MeetingApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("AudioStorage:RootPath", _storageRoot);
+        builder.UseSetting("AudioStorage:MaxBytes", "64");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<MeetingMinutesDbContext>>();
             services.RemoveAll<MeetingMinutesDbContext>();
             services.RemoveAll<IUnitOfWork>();
+            services.RemoveAll<IAiServiceClient>();
 
             services.AddScoped<MeetingMinutesDbContext>(_ =>
             {
@@ -36,6 +44,7 @@ public sealed class MeetingApiFactory : WebApplicationFactory<Program>
                 return new TestMeetingMinutesDbContext(options);
             });
             services.AddScoped<IUnitOfWork, TestUnitOfWork>();
+            services.AddSingleton<IAiServiceClient>(AiClient);
         });
     }
 
@@ -60,6 +69,10 @@ public sealed class MeetingApiFactory : WebApplicationFactory<Program>
         if (disposing)
         {
             _connection.Dispose();
+            if (Directory.Exists(_storageRoot))
+            {
+                Directory.Delete(_storageRoot, recursive: true);
+            }
         }
     }
 
@@ -120,5 +133,63 @@ public sealed class MeetingApiFactory : WebApplicationFactory<Program>
                 .Property<byte[]>("RowVersion")
                 .ValueGeneratedNever()
                 .IsConcurrencyToken();
+    }
+
+    public sealed class TestAiServiceClient : IAiServiceClient
+    {
+        public AiServiceException? TranscriptionFailure { get; set; }
+        public AiServiceException? MinutesFailure { get; set; }
+
+        public Task<AiTranscriptionResult> TranscribeAsync(
+            Stream audio,
+            string fileName,
+            string contentType,
+            ProcessingMode mode,
+            string correlationId,
+            CancellationToken cancellationToken = default)
+        {
+            if (TranscriptionFailure is not null)
+            {
+                return Task.FromException<AiTranscriptionResult>(TranscriptionFailure);
+            }
+
+            return Task.FromResult(new AiTranscriptionResult(
+                new AiRawTranscript(1,
+                    [new AiRawSegment("seg-0001", "Speaker", 0, 1000, "fa", "متن خام")]),
+                Metadata("transcription", mode),
+                correlationId));
+        }
+
+        public Task<AiMinutesResult> GenerateMinutesAsync(
+            AiRawTranscript rawTranscript,
+            ProcessingMode mode,
+            string correlationId,
+            CancellationToken cancellationToken = default)
+        {
+            if (MinutesFailure is not null)
+            {
+                return Task.FromException<AiMinutesResult>(MinutesFailure);
+            }
+
+            return Task.FromResult(new AiMinutesResult(
+                new AiCleanedTranscript(1,
+                    [new AiCleanedSegment("clean-0001", "متن پاک", ["seg-0001"])]),
+                new AiGeneratedMinutes(
+                    1, "جلسه", null, "خلاصه", [], [],
+                    [new AiDecision("تصمیم", ["seg-0001"])], [], [], []),
+                Metadata("minutes", mode),
+                correlationId));
+        }
+
+        private static AiStageMetadata Metadata(string stage, ProcessingMode mode)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var model = mode == ProcessingMode.Fast
+                ? "gemini-3.5-flash-lite"
+                : "gemini-3.6-flash";
+            return new AiStageMetadata(
+                stage, mode, "gemini", model, "gemini", model, false, null,
+                "test-v1", 1, now, now, 0);
+        }
     }
 }

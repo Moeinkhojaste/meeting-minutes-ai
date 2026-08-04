@@ -1,4 +1,5 @@
 using MeetingMinutesAI.Application.Abstractions.Persistence;
+using MeetingMinutesAI.Application.Abstractions.Storage;
 using MeetingMinutesAI.Application.Meetings;
 using MeetingMinutesAI.Domain.Meetings;
 
@@ -120,21 +121,56 @@ public sealed class MeetingServiceTests
             state.Service.UpdateAsync(meeting.Id, "Changed", []));
     }
 
+    [Fact]
+    public async Task DeleteCommitsStagedAudioRemovalAfterDatabaseSuccess()
+    {
+        var meeting = Meeting.Create("Uploaded", Now);
+        meeting.AttachAudio("meeting.wav", "audio/key", "audio/wav", 10, null,
+            new string('a', 64), Now);
+        var state = CreateService([meeting]);
+
+        await state.Service.DeleteAsync(meeting.Id, []);
+
+        Assert.True(state.Storage.StageCalled);
+        Assert.True(state.Storage.CommitCalled);
+        Assert.False(state.Storage.RollbackCalled);
+    }
+
+    [Fact]
+    public async Task DeleteRestoresStagedAudioWhenDatabaseSaveFails()
+    {
+        var meeting = Meeting.Create("Uploaded", Now);
+        meeting.AttachAudio("meeting.wav", "audio/key", "audio/wav", 10, null,
+            new string('a', 64), Now);
+        var state = CreateService([meeting]);
+        state.UnitOfWork.ThrowConcurrency = true;
+
+        await Assert.ThrowsAsync<MeetingConcurrencyException>(() =>
+            state.Service.DeleteAsync(meeting.Id, []));
+
+        Assert.True(state.Storage.StageCalled);
+        Assert.False(state.Storage.CommitCalled);
+        Assert.True(state.Storage.RollbackCalled);
+    }
+
     private static TestState CreateService(IReadOnlyList<Meeting>? meetings = null)
     {
         var repository = new FakeMeetingRepository(meetings ?? []);
         var unitOfWork = new FakeUnitOfWork();
+        var storage = new FakeAudioStorage();
         var service = new MeetingService(
             repository,
             unitOfWork,
+            storage,
             new FixedTimeProvider(Now));
-        return new TestState(service, repository, unitOfWork);
+        return new TestState(service, repository, unitOfWork, storage);
     }
 
     private sealed record TestState(
         MeetingService Service,
         FakeMeetingRepository Repository,
-        FakeUnitOfWork UnitOfWork);
+        FakeUnitOfWork UnitOfWork,
+        FakeAudioStorage Storage);
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {
@@ -203,6 +239,51 @@ public sealed class MeetingServiceTests
             }
 
             return Task.FromResult(1);
+        }
+    }
+
+    private sealed class FakeAudioStorage : IAudioStorage
+    {
+        public bool StageCalled { get; private set; }
+        public bool CommitCalled { get; private set; }
+        public bool RollbackCalled { get; private set; }
+
+        public Task<StoredAudio> SaveAsync(Stream source, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<Stream> OpenReadAsync(string storageKey, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task DeleteIfExistsAsync(string storageKey, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IStagedAudioDeletion> StageDeleteAsync(
+            string storageKey,
+            CancellationToken cancellationToken = default)
+        {
+            StageCalled = true;
+            return Task.FromResult<IStagedAudioDeletion>(new FakeStagedDeletion(this));
+        }
+
+        private sealed class FakeStagedDeletion(FakeAudioStorage owner) : IStagedAudioDeletion
+        {
+            private bool _committed;
+
+            public Task CommitAsync(CancellationToken cancellationToken = default)
+            {
+                _committed = true;
+                owner.CommitCalled = true;
+                return Task.CompletedTask;
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                if (!_committed)
+                {
+                    owner.RollbackCalled = true;
+                }
+                return ValueTask.CompletedTask;
+            }
         }
     }
 }

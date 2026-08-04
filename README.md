@@ -110,13 +110,22 @@ The backend exposes:
 - `GET /api/meetings/{id}`
 - `PUT /api/meetings/{id}`
 - `DELETE /api/meetings/{id}`
+- `POST /api/meetings/{id}/audio`
+- `POST /api/meetings/{id}/process`
+- `GET /api/meetings/{id}/transcripts/raw`
+- `GET /api/meetings/{id}/transcripts/cleaned`
+- `GET /api/meetings/{id}/minutes/generated`
 
 Meeting responses expose the explicit processing status as a lower-camel-case
 string. Updates and deletes require the current quoted `ETag` in an
 `If-Match` header; stale versions return `409 Conflict`. Deletion is rejected
-while a meeting is queued, transcribing, or generating minutes. The current
-delete operation removes the database aggregate only because external audio
-storage is not implemented yet.
+while a meeting is queued, transcribing, or generating minutes. Upload and
+processing also require `If-Match`. Audio is signature-checked while streaming
+to private local storage with a 500 MiB limit. Processing synchronously calls
+the AI service in two stages so the raw transcript is committed before minutes
+generation. A stage-two failure returns a partial meeting while retaining raw
+output. Deletion coordinates removal of both the local object and database
+aggregate. See [backend AI integration](docs/backend-ai-integration.md).
 
 Run the frontend separately:
 
@@ -170,9 +179,10 @@ aggregate-output rules are documented in the
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository now contains meeting persistence, its initial migration, and
-  meeting CRUD endpoints, but it does not yet implement authentication,
-  deployment, export, audio storage, processing orchestration, or a review UI.
+- The repository now contains meeting persistence, CRUD, secure local upload,
+  synchronous staged AI orchestration, and output retrieval. It does not yet
+  implement authentication/ownership, deployment object storage, export, a
+  background job system, or a review UI.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).

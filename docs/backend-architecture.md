@@ -13,8 +13,10 @@ MeetingMinutesAI.Infrastructure -> MeetingMinutesAI.Domain
 
 - **Domain** owns the meeting aggregate, processing rules, and enums. It has no
   ASP.NET Core or EF Core dependency.
-- **Application** owns the `IMeetingRepository` and `IUnitOfWork` boundaries.
-- **Infrastructure** implements those boundaries with EF Core and SQL Server.
+- **Application** owns persistence, audio-storage, AI-client, and orchestration
+  boundaries.
+- **Infrastructure** implements persistence with EF Core/SQL Server, private
+  filesystem audio storage, and the typed AI HTTP client.
 - **API** is the composition root. It registers Infrastructure but does not
   expose persistence entities as HTTP contracts.
 
@@ -28,8 +30,9 @@ provider and timing metadata without copying historical transcript content.
 
 Deleting a meeting hard-deletes its database aggregate. Cross-graph evidence
 foreign keys use SQL Server `NO ACTION` to avoid multiple cascade paths. Audio
-bytes are external and represented only by an opaque storage key, so the later
-deletion use case must remove the external object explicitly.
+bytes are external and represented only by an opaque storage key. Deletion
+first moves that local object to private trash, commits the database cascade,
+then removes the staged object; a database failure restores the object.
 
 ## Meeting CRUD API
 
@@ -43,9 +46,24 @@ a quoted `ETag`.
 returns `428`, a malformed token returns `400`, and a stale token returns
 `409`. Status is read-only through CRUD and can change only through aggregate
 workflow operations. Deletion returns `409` for `Queued`, `Transcribing`, and
-`GeneratingMinutes` meetings. Until an audio-storage adapter is implemented,
-deletion removes the database aggregate but does not claim to remove an
-external audio object.
+`GeneratingMinutes` meetings.
+
+## Audio and processing
+
+`POST /api/meetings/{id}/audio` streams one multipart `audio` file through a
+private temporary file. The adapter enforces the byte limit, hashes the stream,
+detects its container from magic bytes, and atomically moves it to an opaque
+key outside web roots. Submitted extensions and MIME types are not trusted.
+
+`POST /api/meetings/{id}/process` explicitly runs from Uploaded, Completed,
+PartiallyCompleted, or Failed. It persists Queued and Transcribing before
+calling `/v1/transcriptions`, then commits the raw transcript and
+GeneratingMinutes before `/v1/minutes`. Cleaned transcript and generated
+minutes are separate graphs with raw-segment source/evidence links. Stage-one
+failure produces Failed; stage-two failure produces PartiallyCompleted with
+raw output retained. Runs are never retried or switched to another mode by the
+backend. The detailed wire and failure contract is in
+[backend AI integration](backend-ai-integration.md).
 
 ## Migration workflow
 

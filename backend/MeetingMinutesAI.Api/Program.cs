@@ -4,6 +4,8 @@ using MeetingMinutesAI.Api.Middleware;
 using MeetingMinutesAI.Application.Meetings;
 using MeetingMinutesAI.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.Features;
+using MeetingMinutesAI.Infrastructure.Storage;
 
 DotEnvLoader.LoadWithoutOverwritingEnvironment(
     Path.Combine(Directory.GetCurrentDirectory(), ".env")
@@ -19,7 +21,10 @@ builder.Logging.AddJsonConsole(options =>
     options.UseUtcTimestamp = true;
 });
 builder.Services
-    .AddControllers()
+    .AddControllers(options =>
+    {
+        options.AllowEmptyInputInBodyModelBinding = true;
+    })
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -34,6 +39,13 @@ builder.Services.AddExceptionHandler<SafeExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<IMeetingMediaService, MeetingMediaService>();
+var audioLimit = builder.Configuration.GetValue<long?>("AudioStorage:MaxBytes")
+    ?? AudioStorageOptions.DefaultMaxBytes;
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = audioLimit + 1_048_576;
+});
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();

@@ -52,6 +52,7 @@ internal sealed class MeetingRepository : IMeetingRepository
         CancellationToken cancellationToken = default) =>
         await _context.Meetings
             .AsNoTracking()
+            .Include(meeting => meeting.AudioFile)
             .OrderByDescending(meeting => meeting.UpdatedAt)
             .ThenByDescending(meeting => meeting.Id)
             .Skip(skip)
@@ -64,5 +65,37 @@ internal sealed class MeetingRepository : IMeetingRepository
     public Task AddAsync(Meeting meeting, CancellationToken cancellationToken = default) =>
         _context.Meetings.AddAsync(meeting, cancellationToken).AsTask();
 
-    public void Remove(Meeting meeting) => _context.Meetings.Remove(meeting);
+    public void Remove(Meeting meeting)
+    {
+        // SQL Server uses NO ACTION on cross-graph processing/evidence links to
+        // avoid multiple cascade paths. Mark those tracked dependents first so
+        // EF can issue deletes in a valid order without changing the schema.
+        if (meeting.CleanedTranscript is not null)
+        {
+            _context.RemoveRange(meeting.CleanedTranscript.Segments
+                .SelectMany(segment => segment.Sources));
+        }
+
+        foreach (var minutes in meeting.Minutes)
+        {
+            _context.RemoveRange(minutes.Participants.SelectMany(item => item.Evidence));
+            _context.RemoveRange(minutes.Topics.SelectMany(item => item.Evidence));
+            _context.RemoveRange(minutes.Decisions.SelectMany(item => item.Evidence));
+            _context.RemoveRange(minutes.ActionItems.SelectMany(item => item.Evidence));
+            _context.RemoveRange(minutes.OpenQuestions.SelectMany(item => item.Evidence));
+            _context.RemoveRange(minutes.Uncertainties.SelectMany(item => item.Evidence));
+        }
+
+        if (meeting.CleanedTranscript is not null)
+        {
+            _context.CleanedTranscripts.Remove(meeting.CleanedTranscript);
+        }
+        if (meeting.RawTranscript is not null)
+        {
+            _context.RawTranscripts.Remove(meeting.RawTranscript);
+        }
+        _context.MeetingMinutes.RemoveRange(meeting.Minutes);
+        _context.ProcessingRuns.RemoveRange(meeting.ProcessingRuns);
+        _context.Meetings.Remove(meeting);
+    }
 }

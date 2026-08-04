@@ -26,6 +26,11 @@ ignored and must never be committed.
 | --- | --- | --- |
 | `ASPNETCORE_URLS` | `http://localhost:5080` | Backend listen URL |
 | `ConnectionStrings__DefaultConnection` | LocalDB in development | SQL Server connection string override |
+| `AudioStorage__RootPath` | user local application data | Private backend audio root; keep outside web roots |
+| `AudioStorage__MaxBytes` | `524288000` | Backend streaming upload limit |
+| `AIService__BaseUrl` | `http://127.0.0.1:8000` | Backend-to-AI-service URL |
+| `AIService__TimeoutSeconds` | `7200` | Per-request typed-client timeout |
+| `AIService__MaxResponseBytes` | `67108864` | Maximum buffered AI JSON response |
 | `VITE_API_BASE_URL` | `http://localhost:5080` | Frontend backend URL |
 | `MM_AI_STT_MODEL` | `large-v3-turbo` | Selected Whisper checkpoint |
 | `MM_AI_DEVICE` | `cuda` | Required STT device |

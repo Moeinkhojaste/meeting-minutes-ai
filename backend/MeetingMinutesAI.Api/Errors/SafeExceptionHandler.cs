@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using MeetingMinutesAI.Application.Meetings;
+using MeetingMinutesAI.Application.Abstractions.Ai;
+using MeetingMinutesAI.Application.Abstractions.Storage;
 using MeetingMinutesAI.Domain.Common;
 
 namespace MeetingMinutesAI.Api.Errors;
@@ -31,6 +33,24 @@ public sealed class SafeExceptionHandler(
                 StatusCodes.Status409Conflict,
                 "meeting_active",
                 "An actively processing meeting cannot be deleted."),
+            MeetingOutputNotFoundException => new ErrorDetails(
+                StatusCodes.Status404NotFound,
+                "meeting_output_not_found",
+                "The requested meeting output is not available."),
+            MeetingCommandConflictException conflict => new ErrorDetails(
+                StatusCodes.Status409Conflict,
+                "meeting_state_conflict",
+                conflict.Message),
+            AudioUploadException upload when upload.Kind == AudioUploadFailureKind.TooLarge =>
+                new ErrorDetails(
+                    StatusCodes.Status413PayloadTooLarge,
+                    upload.Code,
+                    upload.SafeMessage),
+            AudioUploadException upload => new ErrorDetails(
+                StatusCodes.Status400BadRequest,
+                upload.Code,
+                upload.SafeMessage),
+            MeetingProcessingException processing => MapProcessing(processing.Failure),
             DomainRuleException => new ErrorDetails(
                 StatusCodes.Status400BadRequest,
                 "invalid_request",
@@ -67,4 +87,21 @@ public sealed class SafeExceptionHandler(
         string Code,
         string Message
     );
+
+    private static ErrorDetails MapProcessing(AiServiceException failure) =>
+        failure.Kind switch
+        {
+            AiFailureKind.InvalidRequest => new ErrorDetails(
+                StatusCodes.Status422UnprocessableEntity,
+                failure.Code,
+                failure.SafeMessage),
+            AiFailureKind.Timeout => new ErrorDetails(
+                StatusCodes.Status504GatewayTimeout,
+                failure.Code,
+                failure.SafeMessage),
+            _ => new ErrorDetails(
+                StatusCodes.Status502BadGateway,
+                failure.Code,
+                failure.SafeMessage),
+        };
 }
