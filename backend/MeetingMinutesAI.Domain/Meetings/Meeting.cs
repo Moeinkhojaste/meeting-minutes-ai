@@ -11,10 +11,11 @@ public sealed class Meeting
     {
     }
 
-    private Meeting(string? title, DateTimeOffset createdAt)
+    private Meeting(string? title, DateTimeOffset createdAt, string? userId = null)
     {
         Id = Guid.NewGuid();
         Title = Guard.Optional(title, "Meeting title", 300);
+        UserId = Guard.Optional(userId, "User ID", 128);
         Status = MeetingProcessingStatus.Created;
         CreatedAt = Guard.Utc(createdAt);
         UpdatedAt = CreatedAt;
@@ -23,6 +24,8 @@ public sealed class Meeting
     public Guid Id { get; private set; }
 
     public string? Title { get; private set; }
+
+    public string? UserId { get; private set; }
 
     public MeetingProcessingStatus Status { get; private set; }
 
@@ -46,8 +49,16 @@ public sealed class Meeting
 
     public IReadOnlyCollection<ProcessingRun> ProcessingRuns => _processingRuns.AsReadOnly();
 
-    public static Meeting Create(string? title, DateTimeOffset createdAt) =>
-        new(title, createdAt);
+    public static Meeting Create(string? title, DateTimeOffset createdAt, string? userId = null) =>
+        new(title, createdAt, userId);
+
+    public void EnsureOwner(string? userId)
+    {
+        if (UserId is not null && !string.Equals(UserId, userId, StringComparison.Ordinal))
+        {
+            throw new DomainRuleException("Access to this meeting is forbidden.");
+        }
+    }
 
     public void Rename(string? title, DateTimeOffset updatedAt)
     {
@@ -271,6 +282,8 @@ public sealed class Meeting
             throw new DomainRuleException("Partial processing requires a raw transcript and partial run.");
         }
 
+        CleanedTranscript = null;
+        _minutes.Clear();
         Status = MeetingProcessingStatus.PartiallyCompleted;
         SetError(errorCode, errorMessage);
         Touch(completedAt);

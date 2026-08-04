@@ -12,6 +12,7 @@ internal sealed class MeetingConfiguration : IEntityTypeConfiguration<Meeting>
         builder.HasKey(meeting => meeting.Id);
         builder.Property(meeting => meeting.Id).ValueGeneratedNever();
         builder.Property(meeting => meeting.Title).HasMaxLength(300);
+        builder.Property(meeting => meeting.UserId).HasMaxLength(128);
         builder.Property(meeting => meeting.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(meeting => meeting.ProcessingErrorCode).HasMaxLength(100);
         builder.Property(meeting => meeting.ProcessingErrorMessage).HasMaxLength(1000);

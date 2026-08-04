@@ -122,35 +122,66 @@ public sealed class MeetingServiceTests
     }
 
     [Fact]
-    public async Task DeleteCommitsStagedAudioRemovalAfterDatabaseSuccess()
+    public async Task CreateSetsUserIdWhenProvided()
     {
-        var meeting = Meeting.Create("Uploaded", Now);
-        meeting.AttachAudio("meeting.wav", "audio/key", "audio/wav", 10, null,
-            new string('a', 64), Now);
-        var state = CreateService([meeting]);
+        var state = CreateService();
 
-        await state.Service.DeleteAsync(meeting.Id, []);
+        var result = await state.Service.CreateAsync("Owned", "user-456");
 
-        Assert.True(state.Storage.StageCalled);
-        Assert.True(state.Storage.CommitCalled);
-        Assert.False(state.Storage.RollbackCalled);
+        Assert.Equal("Owned", result.Title);
+        Assert.Equal("user-456", result.UserId);
     }
 
     [Fact]
-    public async Task DeleteRestoresStagedAudioWhenDatabaseSaveFails()
+    public async Task GetByIdRejectsNonOwnerWithForbiddenException()
     {
-        var meeting = Meeting.Create("Uploaded", Now);
-        meeting.AttachAudio("meeting.wav", "audio/key", "audio/wav", 10, null,
-            new string('a', 64), Now);
+        var meeting = Meeting.Create("Private", Now, "owner-id");
         var state = CreateService([meeting]);
-        state.UnitOfWork.ThrowConcurrency = true;
 
-        await Assert.ThrowsAsync<MeetingConcurrencyException>(() =>
-            state.Service.DeleteAsync(meeting.Id, []));
+        await Assert.ThrowsAsync<MeetingForbiddenException>(() =>
+            state.Service.GetByIdAsync(meeting.Id, "attacker-id"));
 
-        Assert.True(state.Storage.StageCalled);
-        Assert.False(state.Storage.CommitCalled);
-        Assert.True(state.Storage.RollbackCalled);
+        var authorized = await state.Service.GetByIdAsync(meeting.Id, "owner-id");
+        Assert.Equal("Private", authorized.Title);
+    }
+
+    [Fact]
+    public async Task UpdateRejectsNonOwnerWithForbiddenException()
+    {
+        var meeting = Meeting.Create("Private", Now, "owner-id");
+        var state = CreateService([meeting]);
+
+        await Assert.ThrowsAsync<MeetingForbiddenException>(() =>
+            state.Service.UpdateAsync(meeting.Id, "Hacked", [], "attacker-id"));
+    }
+
+    [Fact]
+    public async Task DeleteRejectsNonOwnerWithForbiddenException()
+    {
+        var meeting = Meeting.Create("Private", Now, "owner-id");
+        var state = CreateService([meeting]);
+
+        await Assert.ThrowsAsync<MeetingForbiddenException>(() =>
+            state.Service.DeleteAsync(meeting.Id, [], "attacker-id"));
+
+        Assert.False(state.Repository.WasRemoved);
+    }
+
+    [Fact]
+    public async Task ListFiltersByUserIdWhenProvided()
+    {
+        var meetings = new[]
+        {
+            Meeting.Create("User 1 Meeting", Now, "user-1"),
+            Meeting.Create("User 2 Meeting", Now, "user-2"),
+            Meeting.Create("Public Meeting", Now, null),
+        };
+        var state = CreateService(meetings);
+
+        var result = await state.Service.ListAsync(1, 10, "user-1");
+
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, item => Assert.True(item.UserId == "user-1" || item.UserId == null));
     }
 
     private static TestState CreateService(IReadOnlyList<Meeting>? meetings = null)

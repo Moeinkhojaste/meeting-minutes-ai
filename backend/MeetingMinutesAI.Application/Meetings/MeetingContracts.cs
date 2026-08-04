@@ -5,6 +5,7 @@ namespace MeetingMinutesAI.Application.Meetings;
 public sealed record MeetingView(
     Guid Id,
     string? Title,
+    string? UserId,
     MeetingProcessingStatus Status,
     string? ProcessingErrorCode,
     string? ProcessingErrorMessage,
@@ -33,6 +34,14 @@ public sealed class MeetingNotFoundException : Exception
 {
     public MeetingNotFoundException()
         : base("The meeting was not found.")
+    {
+    }
+}
+
+public sealed class MeetingForbiddenException : Exception
+{
+    public MeetingForbiddenException()
+        : base("Access to the specified meeting is forbidden.")
     {
     }
 }

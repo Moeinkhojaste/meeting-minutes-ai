@@ -8,6 +8,7 @@ internal static class MeetingViewMapper
         new(
             meeting.Id,
             meeting.Title,
+            meeting.UserId,
             meeting.Status,
             meeting.ProcessingErrorCode,
             meeting.ProcessingErrorMessage,

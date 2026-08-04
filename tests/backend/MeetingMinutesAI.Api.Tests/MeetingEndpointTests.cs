@@ -160,6 +160,33 @@ public sealed class MeetingEndpointTests : IClassFixture<MeetingApiFactory>
             (await deleteResponse.Content.ReadFromJsonAsync<ApiError>())!.Code);
     }
 
+    [Fact]
+    public async Task OwnershipEnforcedViaUserIdHeader()
+    {
+        var ownedMeeting = Meeting.Create("User Private Meeting", Now, "user-secret");
+        await _factory.SeedAsync(ownedMeeting);
+
+        // Access by different user returns 403 Forbidden
+        using var attackerGetRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/meetings/{ownedMeeting.Id}");
+        attackerGetRequest.Headers.Add("X-User-Id", "attacker-user");
+        using var attackerGetResponse = await _client.SendAsync(attackerGetRequest);
+
+        Assert.Equal(HttpStatusCode.Forbidden, attackerGetResponse.StatusCode);
+        var error = await attackerGetResponse.Content.ReadFromJsonAsync<ApiError>();
+        Assert.NotNull(error);
+        Assert.Equal("forbidden", error.Code);
+
+        // Access by owner succeeds
+        using var ownerGetRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/meetings/{ownedMeeting.Id}");
+        ownerGetRequest.Headers.Add("X-User-Id", "user-secret");
+        using var ownerGetResponse = await _client.SendAsync(ownerGetRequest);
+
+        Assert.Equal(HttpStatusCode.OK, ownerGetResponse.StatusCode);
+        var ownerBody = await ownerGetResponse.Content.ReadFromJsonAsync<MeetingResponse>();
+        Assert.NotNull(ownerBody);
+        Assert.Equal("User Private Meeting", ownerBody.Title);
+    }
+
     private static Meeting CreateFailedMeeting()
     {
         var meeting = CreateUploadedMeeting("Failed", "failed");

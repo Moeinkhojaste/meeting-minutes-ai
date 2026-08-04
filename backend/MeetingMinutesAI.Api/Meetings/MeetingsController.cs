@@ -18,8 +18,9 @@ public sealed class MeetingsController(
         CreateMeetingRequest request,
         CancellationToken cancellationToken)
     {
+        var userId = GetUserId();
         var meeting = MeetingResponse.FromApplication(
-            await meetingService.CreateAsync(request.Title, cancellationToken));
+            await meetingService.CreateAsync(request.Title, userId, cancellationToken));
         SetEntityTag(meeting);
         return CreatedAtAction(nameof(GetById), new { id = meeting.Id }, meeting);
     }
@@ -30,7 +31,8 @@ public sealed class MeetingsController(
         [FromQuery, Range(1, 100)] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var result = await meetingService.ListAsync(page, pageSize, cancellationToken);
+        var userId = GetUserId();
+        var result = await meetingService.ListAsync(page, pageSize, userId, cancellationToken);
         return Ok(MeetingPageResponse.FromApplication(result));
     }
 
@@ -39,10 +41,18 @@ public sealed class MeetingsController(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var meeting = MeetingResponse.FromApplication(
-            await meetingService.GetByIdAsync(id, cancellationToken));
-        SetEntityTag(meeting);
-        return Ok(meeting);
+        var userId = GetUserId();
+        try
+        {
+            var meeting = MeetingResponse.FromApplication(
+                await meetingService.GetByIdAsync(id, userId, cancellationToken));
+            SetEntityTag(meeting);
+            return Ok(meeting);
+        }
+        catch (MeetingForbiddenException)
+        {
+            return Error(StatusCodes.Status403Forbidden, "forbidden", "Access to the requested meeting is forbidden.");
+        }
     }
 
     [HttpPut("{id:guid}")]
@@ -57,14 +67,23 @@ public sealed class MeetingsController(
             return precondition;
         }
 
-        var meeting = MeetingResponse.FromApplication(
-            await meetingService.UpdateAsync(
-                id,
-                request.Title,
-                expectedVersion,
-                cancellationToken));
-        SetEntityTag(meeting);
-        return Ok(meeting);
+        var userId = GetUserId();
+        try
+        {
+            var meeting = MeetingResponse.FromApplication(
+                await meetingService.UpdateAsync(
+                    id,
+                    request.Title,
+                    expectedVersion,
+                    userId,
+                    cancellationToken));
+            SetEntityTag(meeting);
+            return Ok(meeting);
+        }
+        catch (MeetingForbiddenException)
+        {
+            return Error(StatusCodes.Status403Forbidden, "forbidden", "Access to the requested meeting is forbidden.");
+        }
     }
 
     [HttpDelete("{id:guid}")]
@@ -78,8 +97,16 @@ public sealed class MeetingsController(
             return precondition;
         }
 
-        await meetingService.DeleteAsync(id, expectedVersion, cancellationToken);
-        return NoContent();
+        var userId = GetUserId();
+        try
+        {
+            await meetingService.DeleteAsync(id, expectedVersion, userId, cancellationToken);
+            return NoContent();
+        }
+        catch (MeetingForbiddenException)
+        {
+            return Error(StatusCodes.Status403Forbidden, "forbidden", "Access to the requested meeting is forbidden.");
+        }
     }
 
     [HttpPost("{id:guid}/audio")]
@@ -181,6 +208,9 @@ public sealed class MeetingsController(
         SetEntityTag(response.Version);
         return Ok(response);
     }
+
+    private string? GetUserId() =>
+        Request.Headers.TryGetValue("X-User-Id", out var values) ? values.FirstOrDefault() : null;
 
     private ObjectResult? ParseEntityTag(out byte[] version)
     {
