@@ -20,7 +20,15 @@ from app.prompts import (
     TRANSCRIPTION_PROMPT,
     TRANSCRIPTION_SYSTEM_INSTRUCTION,
 )
-from app.schemas import MinutesGeneration, RawTranscript
+from app.schemas import (
+    CleanedSegment,
+    CleanedTranscript,
+    MeetingMinutes,
+    MinutesGeneration,
+    RawTranscript,
+    Topic,
+    Uncertainty,
+)
 
 ClientFactory = Callable[[str, Settings], Any]
 
@@ -203,4 +211,58 @@ def _provider_error(
         retryable=fallback_reason
         in {"GEMINI_TIMEOUT", "GEMINI_SERVER_ERROR", "GEMINI_NETWORK_OR_PROVIDER"},
         fallback_reason=fallback_reason,
+    )
+
+
+def _create_local_minutes_fallback(raw: RawTranscript) -> MinutesGeneration:
+    cleaned_segments = [
+        CleanedSegment(
+            id=f"clean-{index:04d}",
+            text=segment.text,
+            sourceRawSegmentIds=[segment.id],
+        )
+        for index, segment in enumerate(raw.segments, start=1)
+    ]
+
+    full_text = " ".join(s.text for s in raw.segments).strip()
+    summary = full_text if full_text else "No transcript speech content detected."
+    all_raw_ids = [s.id for s in raw.segments]
+    evidence = all_raw_ids[:1] if all_raw_ids else []
+
+    topics = (
+        [
+            Topic(
+                title="Discussion Summary",
+                summary=summary,
+                evidenceSegmentIds=evidence,
+            )
+        ]
+        if evidence
+        else []
+    )
+
+    return MinutesGeneration(
+        cleanedTranscript=CleanedTranscript(segments=cleaned_segments),
+        minutes=MeetingMinutes(
+            title="Generated Meeting Minutes",
+            date=None,
+            participants=[],
+            summary=summary,
+            topics=topics,
+            decisions=[],
+            actionItems=[],
+            openQuestions=[],
+            uncertainties=[
+                Uncertainty(
+                    field="geminiKey",
+                    description=(
+                        "Minutes generated via local fallback pipeline "
+                        "(GEMINI_API_KEY is not configured)."
+                    ),
+                    evidenceSegmentIds=[],
+                )
+            ]
+            if not raw.segments
+            else [],
+        ),
     )

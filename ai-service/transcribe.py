@@ -114,21 +114,29 @@ def format_timestamp(seconds: float) -> str:
 
 
 def configure_windows_nvidia_dlls() -> None:
-    """Make NVIDIA DLLs installed in the virtual environment discoverable."""
+    """Make NVIDIA DLLs installed in site-packages discoverable."""
     if sys.platform != "win32":
         return
 
-    site_packages = Path(sys.prefix) / "Lib" / "site-packages"
-    dll_directories = (
-        site_packages / "nvidia" / "cublas" / "bin",
-        site_packages / "nvidia" / "cuda_nvrtc" / "bin",
-        site_packages / "nvidia" / "cudnn" / "bin",
-    )
-    for dll_directory in dll_directories:
-        if dll_directory.is_dir():
-            DLL_DIRECTORY_HANDLES.append(
-                os.add_dll_directory(str(dll_directory))
-            )
+    import site
+
+    candidate_packages = [Path(sys.prefix) / "Lib" / "site-packages"]
+    try:
+        candidate_packages.extend([Path(p) for p in site.getsitepackages()])
+        candidate_packages.append(Path(site.getusersitepackages()))
+    except Exception:
+        pass
+
+    for site_pkg in candidate_packages:
+        for component in ("cublas", "cuda_nvrtc", "cudnn"):
+            dll_directory = site_pkg / "nvidia" / component / "bin"
+            if dll_directory.is_dir():
+                try:
+                    DLL_DIRECTORY_HANDLES.append(
+                        os.add_dll_directory(str(dll_directory))
+                    )
+                except Exception:
+                    pass
 
 
 def verify_cuda_support() -> None:

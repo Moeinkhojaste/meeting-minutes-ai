@@ -79,6 +79,10 @@ function App() {
         if (rawRes.status === 'fulfilled') setRawTranscript(rawRes.value)
         if (cleanedRes.status === 'fulfilled') setCleanedTranscript(cleanedRes.value)
         if (minutesRes.status === 'fulfilled') setMinutes(minutesRes.value)
+
+        if (refreshedMeeting.status === 'partiallyCompleted') {
+          setActiveTab('transcripts')
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch meeting details')

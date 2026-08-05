@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.302
+          dotnet-version: "9.0.x"
       - run: dotnet restore MeetingMinutesAI.slnx
       - run: dotnet build MeetingMinutesAI.slnx --no-restore
       - run: dotnet test MeetingMinutesAI.slnx --no-build
