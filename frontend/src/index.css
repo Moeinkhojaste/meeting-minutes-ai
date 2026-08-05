@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-fa: 'Vazirmatn', 'B Yekan', Tahoma, sans-serif;
+  --font-sans: 'Vazirmatn', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-fa: 'Vazirmatn', 'Inter', system-ui, sans-serif;
   
   --primary-600: #4f46e5;
   --primary-700: #4338ca;
@@ -35,6 +37,18 @@
 
 [dir="rtl"] {
   font-family: var(--font-fa);
+}
+
+/* Bi-directional mixed Persian & English text support */
+p, span, h1, h2, h3, h4, h5, h6, li, td, th, input, textarea {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+/* Technical model names & badges must stay isolated LTR */
+.ltr-text, .badge, code, pre, .model-badge, [dir="ltr"] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
 }
 
 * {

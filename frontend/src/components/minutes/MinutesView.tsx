@@ -31,13 +31,13 @@ export function MinutesView({ minutes, loading, error, onRefresh }: MinutesViewP
     <div className="glass-panel" style={{ padding: '24px', background: '#ffffff' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ margin: '0 0 6px 0', fontSize: '1.4rem', color: '#0f172a' }}>
+          <h2 dir="auto" style={{ margin: '0 0 6px 0', fontSize: '1.4rem', color: '#0f172a', unicodeBidi: 'plaintext', textAlign: 'start' }}>
             {minutes.title || 'Project Meeting Minutes'}
           </h2>
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#64748b', flexWrap: 'wrap' }}>
             {minutes.date && <span>📅 Date: {minutes.date}</span>}
             {minutes.participants.length > 0 && (
-              <span>
+              <span dir="auto">
                 👥 Participants: {minutes.participants.map((p) => (p.role ? `${p.name} (${p.role})` : p.name)).join(', ')}
               </span>
             )}
@@ -54,7 +54,7 @@ export function MinutesView({ minutes, loading, error, onRefresh }: MinutesViewP
         <h3 style={{ fontSize: '1.1rem', color: '#1e293b', marginTop: 0, marginBottom: '8px' }}>
           📝 Executive Summary
         </h3>
-        <div style={{ background: '#f8fafc', borderLeft: '4px solid #4f46e5', padding: '12px 16px', borderRadius: '0 8px 8px 0', fontSize: '0.95rem', lineHeight: 1.6 }}>
+        <div dir="auto" style={{ background: '#f8fafc', borderLeft: '4px solid #4f46e5', padding: '12px 16px', borderRadius: '0 8px 8px 0', fontSize: '0.95rem', lineHeight: 1.6, unicodeBidi: 'plaintext', textAlign: 'start' }}>
           {minutes.summary || 'No summary available.'}
         </div>
       </section>

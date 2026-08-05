@@ -2,6 +2,24 @@ using MeetingMinutesAI.Domain.Meetings;
 
 namespace MeetingMinutesAI.Application.Meetings;
 
+public sealed record ProcessingStageView(
+    string Stage,
+    string PrimaryProvider,
+    string PrimaryModel,
+    string ActualProvider,
+    string ActualModel,
+    bool FallbackUsed,
+    string? FallbackReason,
+    long DurationMilliseconds
+);
+
+public sealed record ProcessingRunView(
+    int AttemptNumber,
+    string RequestedMode,
+    string Status,
+    IReadOnlyList<ProcessingStageView> Stages
+);
+
 public sealed record MeetingView(
     Guid Id,
     string? Title,
@@ -10,6 +28,7 @@ public sealed record MeetingView(
     string? ProcessingErrorCode,
     string? ProcessingErrorMessage,
     AudioView? Audio,
+    ProcessingRunView? LatestRun,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     byte[] Version

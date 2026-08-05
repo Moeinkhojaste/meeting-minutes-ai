@@ -21,12 +21,31 @@ export interface AudioResponse {
   uploadedAt: string
 }
 
+export interface ProcessingStageView {
+  stage: string
+  primaryProvider: string
+  primaryModel: string
+  actualProvider: string
+  actualModel: string
+  fallbackUsed: boolean
+  fallbackReason?: string | null
+  durationMilliseconds: number
+}
+
+export interface ProcessingRunView {
+  attemptNumber: number
+  requestedMode: string
+  status: string
+  stages: ProcessingStageView[]
+}
+
 export interface MeetingResponse {
   id: string
   title: string | null
   status: MeetingProcessingStatus
   processingError: ProcessingErrorResponse | null
   audio: AudioResponse | null
+  latestRun?: ProcessingRunView | null
   createdAt: string
   updatedAt: string
   version: string

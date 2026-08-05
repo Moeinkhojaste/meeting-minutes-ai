@@ -112,7 +112,7 @@ export function TranscriptView({
                   </span>
                 )}
               </div>
-              <p style={{ margin: 0, fontSize: '0.92rem', color: '#1e293b', lineHeight: 1.5 }}>
+              <p dir="auto" style={{ margin: 0, fontSize: '0.92rem', color: '#1e293b', lineHeight: 1.5, unicodeBidi: 'plaintext', textAlign: 'start' }}>
                 {segment.text}
               </p>
             </div>

@@ -18,6 +18,7 @@ import { MinutesView } from './components/minutes/MinutesView'
 import { Tabs } from './components/common/Tabs'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { ErrorAlert } from './components/common/ErrorAlert'
+import { ModelProvenanceCard } from './components/meeting/ModelProvenanceCard'
 
 function App() {
   const [dir, setDir] = useState<'ltr' | 'rtl'>('ltr')
@@ -252,6 +253,9 @@ function App() {
                 </button>
               </div>
             </div>
+
+            {/* Model Provenance Card displaying executed models */}
+            <ModelProvenanceCard run={selectedMeeting.latestRun} />
           </div>
 
           {error && <ErrorAlert message={error} />}
