@@ -21,6 +21,14 @@ export function TranscriptView({
   const [activeTab, setActiveTab] = useState<'raw' | 'cleaned'>('cleaned')
   const [searchTerm, setSearchTerm] = useState('')
 
+  const hasCleaned = Boolean(cleanedTranscript && cleanedTranscript.segments.length > 0)
+  const hasRaw = Boolean(rawTranscript && rawTranscript.segments.length > 0)
+
+  // Auto-switch to raw if cleaned is empty but raw transcript exists
+  const effectiveTab = activeTab === 'cleaned' && !hasCleaned && hasRaw ? 'raw' : activeTab
+  const currentTranscript = effectiveTab === 'cleaned' ? cleanedTranscript : rawTranscript
+  const segments = currentTranscript?.segments || []
+
   if (loading) {
     return <LoadingSpinner label="Loading meeting transcript..." />
   }
@@ -28,9 +36,6 @@ export function TranscriptView({
   if (error) {
     return <ErrorAlert title="Transcript Unavailable" message={error} onRetry={onRefresh} />
   }
-
-  const currentTranscript = activeTab === 'cleaned' ? cleanedTranscript : rawTranscript
-  const segments = currentTranscript?.segments || []
 
   const filteredSegments = segments.filter(
     (s) =>
@@ -51,13 +56,13 @@ export function TranscriptView({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            className={`btn btn-sm ${activeTab === 'cleaned' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn btn-sm ${effectiveTab === 'cleaned' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('cleaned')}
           >
             Cleaned Transcript ({cleanedTranscript?.segments.length || 0})
           </button>
           <button
-            className={`btn btn-sm ${activeTab === 'raw' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn btn-sm ${effectiveTab === 'raw' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('raw')}
           >
             Raw Transcript ({rawTranscript?.segments.length || 0})
