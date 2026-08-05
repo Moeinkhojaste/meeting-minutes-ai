@@ -168,9 +168,7 @@ aggregate-output rules are documented in the
 
 ## Privacy and limitations
 
-- Local copies of audio, references, annotations, transcripts, generated
-  evaluation results, model files, secrets, and `.env` files remain ignored.
-  Audio and transcripts leave the machine when sent to Gemini.
+
 - Every accepted meeting is sent to Gemini first, including private meetings.
   The free Gemini tier may process or retain data under Google's current terms.
 - faster-whisper is only a technical transcription fallback. Transcript
