@@ -1,52 +1,197 @@
-main {
-  width: min(680px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 80px 0;
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-.eyebrow {
-  color: #2563eb;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.header {
+  height: 64px;
+  border-bottom: 1px solid var(--border-color);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.persian {
-  color: #334155;
-  font-size: 1.5rem;
-  margin-top: 8px;
-}
-
-.boundary {
-  color: #475569;
-  line-height: 1.7;
-  margin: 36px auto;
-  max-width: 58ch;
-}
-
-dl {
-  display: grid;
+.header-brand {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  text-align: left;
 }
 
-dl div {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 18px;
-}
-
-dt {
-  color: #64748b;
-  font-size: 0.8rem;
+.header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-600), var(--accent-purple));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
-  text-transform: uppercase;
+  font-size: 1.1rem;
 }
 
-dd {
-  color: #0f172a;
-  margin: 6px 0 0;
-  overflow-wrap: anywhere;
+.header-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 480px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+/* Audio Uploader Box */
+.uploader-box {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.uploader-box:hover,
+.uploader-box.drag-over {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+}
+
+.uploader-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  color: var(--primary-600);
+}
+
+/* Tabs */
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  color: var(--primary-600);
+  border-bottom-color: var(--primary-600);
+}
+
+/* Cards Grid */
+.meetings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.meeting-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.meeting-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+}
+
+/* Tables */
+.action-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.action-items-table th,
+.action-items-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+[dir="rtl"] .action-items-table th,
+[dir="rtl"] .action-items-table td {
+  text-align: right;
+}
+
+.action-items-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: var(--text-muted);
 }
