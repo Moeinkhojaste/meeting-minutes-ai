@@ -19,7 +19,7 @@ export function ErrorAlert({ title = 'Error', message, onRetry }: ErrorAlertProp
         gap: '8px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <strong style={{ fontSize: '0.95rem' }}>{title}</strong>
         {onRetry && (
           <button className="btn btn-sm btn-secondary" onClick={onRetry} style={{ marginLeft: 'auto' }}>

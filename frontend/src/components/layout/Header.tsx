@@ -12,8 +12,8 @@ export function Header({ dir, onToggleDir, onNewMeetingClick, onHomeClick }: Hea
         <div className="header-logo">AI</div>
         <div>
           <h1 className="header-title">Meeting Minutes AI</h1>
-          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>
-            {dir === 'rtl' ? 'سامانه هوشمند تولید صورت‌جلسه' : 'Automated Meeting Processing System'}
+          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }} lang="fa" dir="rtl">
+            سامانه هوشمند تولید صورت‌جلسه
           </span>
         </div>
       </div>
