@@ -11,7 +11,7 @@ comparator.
 ## Repository structure
 
 ```text
-frontend/    React, TypeScript, and Vite foundation
+frontend/    React, TypeScript, Vite foundation, meeting dashboard, review UI, and export features
 backend/     ASP.NET Core Clean Architecture backend and SQL Server persistence
 ai-service/  Python STT evaluation and transcription tools
 tests/       Cross-project and backend tests
@@ -180,9 +180,10 @@ aggregate-output rules are documented in the
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
 - The repository now contains meeting persistence, CRUD, secure local upload,
-  synchronous staged AI orchestration, and output retrieval. It does not yet
-  implement authentication/ownership, deployment object storage, export, a
-  background job system, or a review UI.
+  synchronous staged AI orchestration, output retrieval, a complete frontend meeting
+  dashboard and review UI, and multi-format export (Markdown, JSON, Text, Print/PDF).
+  It does not yet implement authentication/ownership, deployment object storage, or a
+  background job queue system.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).
