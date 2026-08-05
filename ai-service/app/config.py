@@ -11,8 +11,8 @@ from settings import DEFAULT_ENV_FILE, read_dotenv
 
 ProcessingMode = Literal["fast", "quality"]
 
-DEFAULT_FAST_GEMINI_MODEL = "gemini-3.5-flash-lite"
-DEFAULT_QUALITY_GEMINI_MODEL = "gemini-3.6-flash"
+DEFAULT_FAST_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_QUALITY_GEMINI_MODEL = "gemini-2.0-flash"
 DEFAULT_FAST_LOCAL_STT_MODEL = "small"
 DEFAULT_QUALITY_LOCAL_STT_MODEL = "large-v3-turbo"
 
