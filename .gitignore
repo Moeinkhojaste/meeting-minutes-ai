@@ -370,6 +370,8 @@ frontend/dist/
 .mypy_cache/
 *.transcript.txt
 models/
+uploads/
+temp/
 
 # Local recordings placed in the repository root
 /*.aac

@@ -12,7 +12,7 @@ comparator.
 
 ```text
 frontend/    React, TypeScript, and Vite foundation
-backend/     ASP.NET Core API foundation
+backend/     ASP.NET Core Clean Architecture backend and SQL Server persistence
 ai-service/  Python STT evaluation and transcription tools
 tests/       Cross-project and backend tests
 docs/        Charter, setup, evaluation, and technical documentation
@@ -51,6 +51,7 @@ python -m pip install -r .\ai-service\requirements-dev.txt
 Restore the backend and frontend:
 
 ```powershell
+dotnet tool restore
 dotnet restore .\MeetingMinutesAI.slnx
 Set-Location .\frontend
 npm ci
@@ -82,6 +83,20 @@ Pop-Location
 
 ## Run the foundations
 
+Apply the committed SQL Server migration to the LocalDB development database:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet tool run dotnet-ef database update `
+  --project .\backend\MeetingMinutesAI.Infrastructure `
+  --startup-project .\backend\MeetingMinutesAI.Api `
+  --context MeetingMinutesDbContext
+```
+
+The backend uses enforced Domain, Application, Infrastructure, and API
+projects. See [backend architecture](docs/backend-architecture.md) for the
+dependency rules, persistence model, and migration workflow.
+
 ```powershell
 dotnet run --project .\backend\MeetingMinutesAI.Api
 ```
@@ -90,6 +105,27 @@ The backend exposes:
 
 - `GET /health/live`
 - `GET /health/ready`
+- `POST /api/meetings`
+- `GET /api/meetings?page=1&pageSize=20`
+- `GET /api/meetings/{id}`
+- `PUT /api/meetings/{id}`
+- `DELETE /api/meetings/{id}`
+- `POST /api/meetings/{id}/audio`
+- `POST /api/meetings/{id}/process`
+- `GET /api/meetings/{id}/transcripts/raw`
+- `GET /api/meetings/{id}/transcripts/cleaned`
+- `GET /api/meetings/{id}/minutes/generated`
+
+Meeting responses expose the explicit processing status as a lower-camel-case
+string. Updates and deletes require the current quoted `ETag` in an
+`If-Match` header; stale versions return `409 Conflict`. Deletion is rejected
+while a meeting is queued, transcribing, or generating minutes. Upload and
+processing also require `If-Match`. Audio is signature-checked while streaming
+to private local storage with a 500 MiB limit. Processing synchronously calls
+the AI service in two stages so the raw transcript is committed before minutes
+generation. A stage-two failure returns a partial meeting while retaining raw
+output. Deletion coordinates removal of both the local object and database
+aggregate. See [backend AI integration](docs/backend-ai-integration.md).
 
 Run the frontend separately:
 
@@ -143,8 +179,10 @@ aggregate-output rules are documented in the
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository does not yet implement deployment, authentication, product
-  persistence, export, or a review UI.
+- The repository now contains meeting persistence, CRUD, secure local upload,
+  synchronous staged AI orchestration, and output retrieval. It does not yet
+  implement authentication/ownership, deployment object storage, export, a
+  background job system, or a review UI.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).
