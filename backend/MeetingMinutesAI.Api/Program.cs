@@ -37,6 +37,16 @@ builder.Services
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<SafeExceptionHandler>();
 builder.Services.AddHealthChecks();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .WithExposedHeaders("ETag");
+    });
+});
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<IMeetingMediaService, MeetingMediaService>();
@@ -51,6 +61,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseCors();
 app.UseExceptionHandler();
 app.MapControllers();
 app.MapHealthChecks("/health/live", new()
