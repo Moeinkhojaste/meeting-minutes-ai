@@ -135,7 +135,7 @@ class MinutesGeneration(StrictModel):
             raise ValueError("meeting minutes contain an unknown evidence ID")
 
 
-ProviderName = Literal["gemini", "faster-whisper"]
+ProviderName = Literal["gemini", "faster-whisper", "local-llm"]
 
 
 class StageMetadata(StrictModel):

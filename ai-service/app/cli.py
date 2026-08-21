@@ -16,6 +16,7 @@ from app.config import load_settings, parse_mode
 from app.errors import AppError
 from app.orchestration import PipelineService
 from app.providers.gemini import GeminiProvider
+from app.providers.local_llm import LocalLLMProvider
 from app.providers.local_stt import FasterWhisperProvider
 from app.schemas import MinutesRequest, ProcessResponse, SafeError
 
@@ -44,6 +45,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         settings,
         GeminiProvider(settings),
         FasterWhisperProvider(settings),
+        LocalLLMProvider(settings),
     )
     correlation_id = "cli"
     try:

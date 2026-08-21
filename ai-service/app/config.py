@@ -15,6 +15,9 @@ DEFAULT_FAST_GEMINI_MODEL = "gemini-3.5-flash-lite"
 DEFAULT_QUALITY_GEMINI_MODEL = "gemini-3.6-flash"
 DEFAULT_FAST_LOCAL_STT_MODEL = "small"
 DEFAULT_QUALITY_LOCAL_STT_MODEL = "large-v3-turbo"
+DEFAULT_FAST_LOCAL_MINUTES_MODEL = "qwen2.5:3b-instruct"
+DEFAULT_QUALITY_LOCAL_MINUTES_MODEL = "qwen2.5:3b-instruct"
+DEFAULT_LOCAL_LLM_BASE_URL = "http://localhost:11434/v1"
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,11 @@ class Settings:
     ffmpeg_path: str
     ffprobe_path: str
     request_timeout_seconds: float
+    local_llm_base_url: str = DEFAULT_LOCAL_LLM_BASE_URL
+    local_fast_minutes_model: str = DEFAULT_FAST_LOCAL_MINUTES_MODEL
+    local_quality_minutes_model: str = DEFAULT_QUALITY_LOCAL_MINUTES_MODEL
+    local_llm_api_key: str = ""
+    local_llm_timeout_seconds: float = 300.0
 
     def gemini_model(self, mode: ProcessingMode) -> str:
         return self.gemini_fast_model if mode == "fast" else self.gemini_quality_model
@@ -42,6 +50,13 @@ class Settings:
             self.local_fast_stt_model
             if mode == "fast"
             else self.local_quality_stt_model
+        )
+
+    def local_minutes_model(self, mode: ProcessingMode) -> str:
+        return (
+            self.local_fast_minutes_model
+            if mode == "fast"
+            else self.local_quality_minutes_model
         )
 
 
@@ -55,7 +70,11 @@ def load_settings(
     dotenv = read_dotenv(env_file)
 
     def value(name: str, default: str = "") -> str:
-        return source.get(name) or dotenv.get(name) or default
+        if name in source:
+            return source[name]
+        if name in dotenv:
+            return dotenv[name]
+        return default
 
     default_mode_value = value("MM_AI_DEFAULT_MODE", "fast").lower()
     if default_mode_value not in {"fast", "quality"}:
@@ -92,6 +111,21 @@ def load_settings(
         request_timeout_seconds=_positive_float(
             value("MM_AI_REQUEST_TIMEOUT_SECONDS", "300"),
             "MM_AI_REQUEST_TIMEOUT_SECONDS",
+        ),
+        local_llm_base_url=value(
+            "MM_AI_LOCAL_LLM_BASE_URL", DEFAULT_LOCAL_LLM_BASE_URL
+        ),
+        local_fast_minutes_model=value(
+            "MM_AI_LOCAL_FAST_MINUTES_MODEL", DEFAULT_FAST_LOCAL_MINUTES_MODEL
+        ),
+        local_quality_minutes_model=value(
+            "MM_AI_LOCAL_QUALITY_MINUTES_MODEL",
+            DEFAULT_QUALITY_LOCAL_MINUTES_MODEL,
+        ),
+        local_llm_api_key=value("MM_AI_LOCAL_LLM_API_KEY", ""),
+        local_llm_timeout_seconds=_positive_float(
+            value("MM_AI_LOCAL_LLM_TIMEOUT_SECONDS", "300"),
+            "MM_AI_LOCAL_LLM_TIMEOUT_SECONDS",
         ),
     )
 

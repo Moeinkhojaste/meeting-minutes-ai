@@ -15,6 +15,7 @@ from app.errors import ProviderError  # noqa: E402
 from app.orchestration import PipelineService  # noqa: E402
 from tests.phase3_helpers import (  # noqa: E402
     FakeGemini,
+    FakeLocalMinutes,
     FakeLocalStt,
     FakePipeline,
     raw_transcript,
@@ -52,6 +53,7 @@ def test_missing_key_health_is_degraded_not_unusable() -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "degraded"
     assert response.json()["transcription"]["localFallbackConfigured"] is True
+    assert response.json()["minutes"]["localFallbackConfigured"] is True
 
 
 def test_transcription_endpoint_accepts_audio_and_mode() -> None:
@@ -90,7 +92,7 @@ def test_process_endpoint_returns_complete_result() -> None:
     assert response.json()["status"] == "completed"
 
 
-def test_process_returns_partial_raw_transcript_when_minutes_fail() -> None:
+def test_process_returns_completed_result_with_local_llm_fallback() -> None:
     gemini = FakeGemini(
         minutes_error=ProviderError(
             "GEMINI_PROVIDER_FAILED",
@@ -99,7 +101,40 @@ def test_process_returns_partial_raw_transcript_when_minutes_fail() -> None:
             fallback_reason="GEMINI_QUOTA",
         )
     )
-    pipeline = PipelineService(settings(), gemini, FakeLocalStt())
+    local_minutes = FakeLocalMinutes()
+    pipeline = PipelineService(settings(), gemini, FakeLocalStt(), local_minutes)
+
+    response = client(pipeline).post(
+        "/v1/process",
+        files={"audio": ("meeting.wav", wav_bytes(), "audio/wav")},
+        data={"mode": "fast"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "completed"
+    assert response.json()["minutesMetadata"]["actualProvider"] == "local-llm"
+    assert response.json()["minutesMetadata"]["fallbackUsed"] is True
+    assert local_minutes.calls == 1
+
+
+def test_process_returns_partial_raw_transcript_when_all_minutes_providers_fail() -> None:
+    gemini = FakeGemini(
+        minutes_error=ProviderError(
+            "GEMINI_PROVIDER_FAILED",
+            "Gemini processing failed.",
+            retryable=False,
+            fallback_reason="GEMINI_QUOTA",
+        )
+    )
+    local_minutes = FakeLocalMinutes(
+        ProviderError(
+            "LOCAL_LLM_FAILED",
+            "Local LLM service is unavailable.",
+            retryable=True,
+            fallback_reason="LOCAL_LLM_UNAVAILABLE",
+        )
+    )
+    pipeline = PipelineService(settings(), gemini, FakeLocalStt(), local_minutes)
 
     response = client(pipeline).post(
         "/v1/process",
@@ -111,9 +146,10 @@ def test_process_returns_partial_raw_transcript_when_minutes_fail() -> None:
     assert response.json()["status"] == "partial"
     assert response.json()["rawTranscript"]["segments"]
     assert response.json()["minutes"] is None
+    assert response.json()["stageError"]["code"] == "ALL_MINUTES_PROVIDERS_FAILED"
 
 
-def test_minutes_failure_returns_exact_safe_error_without_local_llm() -> None:
+def test_minutes_failure_returns_exact_safe_error_when_all_providers_fail() -> None:
     gemini = FakeGemini(
         minutes_error=ProviderError(
             "GEMINI_PROVIDER_FAILED",
@@ -122,7 +158,15 @@ def test_minutes_failure_returns_exact_safe_error_without_local_llm() -> None:
             fallback_reason="GEMINI_KEY_MISSING",
         )
     )
-    pipeline = PipelineService(settings(), gemini, FakeLocalStt())
+    local_minutes = FakeLocalMinutes(
+        ProviderError(
+            "LOCAL_LLM_FAILED",
+            "Local LLM service is unavailable.",
+            retryable=True,
+            fallback_reason="LOCAL_LLM_UNAVAILABLE",
+        )
+    )
+    pipeline = PipelineService(settings(), gemini, FakeLocalStt(), local_minutes)
 
     response = client(pipeline).post(
         "/v1/minutes",
@@ -139,7 +183,7 @@ def test_minutes_failure_returns_exact_safe_error_without_local_llm() -> None:
         "correlationId",
         "retryable",
     }
-    assert pipeline._local_stt.calls == 0
+    assert response.json()["code"] == "ALL_MINUTES_PROVIDERS_FAILED"
 
 
 def test_invalid_mode_returns_exact_safe_error_without_provider() -> None:

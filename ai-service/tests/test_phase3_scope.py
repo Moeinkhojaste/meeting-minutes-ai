@@ -1,4 +1,4 @@
-"""Guard the explicit no-local-LLM boundary for Phase 3."""
+"""Guard the provider boundaries and dependency hygiene for the AI service."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def test_cli_exposes_all_three_commands_and_modes() -> None:
     )
 
 
-def test_phase3_has_no_local_minutes_provider_or_runtime_dependency() -> None:
+def test_local_minutes_provider_exists_without_heavy_runtime_bloat() -> None:
     provider_names = {
         path.name for path in (AI_SERVICE_DIRECTORY / "app" / "providers").glob("*.py")
     }
@@ -39,15 +39,15 @@ def test_phase3_has_no_local_minutes_provider_or_runtime_dependency() -> None:
         + (AI_SERVICE_DIRECTORY / "requirements-dev.txt").read_text(encoding="utf-8")
     ).lower()
 
-    assert "local_minutes" not in provider_names
-    for forbidden in ("ollama", "transformers", "llama-cpp", "vllm", "qwen"):
+    assert "local_llm.py" in provider_names
+    # Ensure heavy in-process GPU/LLM frameworks are not polluting the base requirements
+    for forbidden in ("transformers", "llama-cpp", "vllm"):
         assert forbidden not in requirements
 
 
-def test_local_minutes_configuration_is_absent() -> None:
+def test_local_minutes_configuration_is_documented_in_env_example() -> None:
     example = (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8")
 
-    assert "MM_AI_LOCAL_FAST_MINUTES_MODEL" not in example
-    assert "MM_AI_LOCAL_QUALITY_MINUTES_MODEL" not in example
-    assert "OLLAMA_HOST" not in example
-    assert "MM_AI_OLLAMA_MODEL" not in example
+    assert "MM_AI_LOCAL_FAST_MINUTES_MODEL" in example
+    assert "MM_AI_LOCAL_QUALITY_MINUTES_MODEL" in example
+    assert "MM_AI_LOCAL_LLM_BASE_URL" in example

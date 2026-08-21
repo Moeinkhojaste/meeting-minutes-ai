@@ -38,6 +38,11 @@ def settings(**overrides: Any) -> Settings:
         "ffmpeg_path": "ffmpeg",
         "ffprobe_path": "ffprobe",
         "request_timeout_seconds": 300.0,
+        "local_llm_base_url": "http://localhost:11434/v1",
+        "local_fast_minutes_model": "qwen2.5:3b-instruct",
+        "local_quality_minutes_model": "qwen2.5:3b-instruct",
+        "local_llm_api_key": "",
+        "local_llm_timeout_seconds": 300.0,
     }
     values.update(overrides)
     return Settings(**values)
@@ -154,6 +159,24 @@ class FakeLocalStt:
         if self.error:
             raise self.error
         return raw_transcript(), "small" if mode == "fast" else "large-v3-turbo"
+
+
+class FakeLocalMinutes:
+    name = "local-llm"
+
+    def __init__(self, error: ProviderError | None = None) -> None:
+        self.error = error
+        self.calls = 0
+
+    def generate_minutes(
+        self, transcript: RawTranscript, mode: str
+    ) -> tuple[MinutesGeneration, str]:
+        self.calls += 1
+        if self.error:
+            raise self.error
+        assert transcript == raw_transcript()
+        model = "qwen2.5:3b-instruct"
+        return generated_minutes(), model
 
 
 class FakePipeline:

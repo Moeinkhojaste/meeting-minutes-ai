@@ -10,10 +10,11 @@ from app.audio import PreparedAudio
 from app.config import ProcessingMode, Settings
 from app.errors import AppError, ProviderError
 from app.prompts import (
+    LOCAL_MINUTES_PROMPT_VERSION,
     MINUTES_PROMPT_VERSION,
     TRANSCRIPTION_PROMPT_VERSION,
 )
-from app.providers.base import PrimaryProvider, TranscriptionProvider
+from app.providers.base import MinutesProvider, PrimaryProvider, TranscriptionProvider
 from app.schemas import (
     EmbeddedStageError,
     MinutesResponse,
@@ -26,17 +27,19 @@ from app.schemas import (
 
 
 class PipelineService:
-    """Coordinate Gemini-first STT and Gemini-only minutes generation."""
+    """Coordinate Gemini-first STT and Gemini-first minutes generation with local fallbacks."""
 
     def __init__(
         self,
         settings: Settings,
         gemini: PrimaryProvider,
         local_stt: TranscriptionProvider,
+        local_minutes: MinutesProvider,
     ) -> None:
         self._settings = settings
         self._gemini = gemini
         self._local_stt = local_stt
+        self._local_minutes = local_minutes
 
     def transcribe(
         self,
@@ -97,20 +100,42 @@ class PipelineService:
         correlation_id: str | None = None,
     ) -> MinutesResponse:
         correlation_id = correlation_id or str(uuid4())
-        model = self._settings.gemini_model(mode)
+        primary_model = self._settings.gemini_model(mode)
         started_at = datetime.now(UTC)
         started = time.perf_counter()
-        generated, actual_model = self._gemini.generate_minutes(transcript, mode)
+        fallback_reason: str | None = None
+        try:
+            generated, actual_model = self._gemini.generate_minutes(transcript, mode)
+            actual_provider: ProviderName = "gemini"
+            fallback_used = False
+            prompt_version = MINUTES_PROMPT_VERSION
+        except ProviderError as gemini_error:
+            fallback_reason = gemini_error.fallback_reason
+            try:
+                generated, actual_model = self._local_minutes.generate_minutes(
+                    transcript, mode
+                )
+            except ProviderError as local_error:
+                raise AppError(
+                    "ALL_MINUTES_PROVIDERS_FAILED",
+                    "Minutes generation failed with all configured providers.",
+                    status_code=502,
+                    retryable=gemini_error.retryable or local_error.retryable,
+                ) from local_error
+            actual_provider = "local-llm"
+            fallback_used = True
+            prompt_version = LOCAL_MINUTES_PROMPT_VERSION
+
         completed_at = datetime.now(UTC)
         metadata = StageMetadata(
             stage="minutes",
             requestedMode=mode,
-            primaryModel=model,
-            actualProvider="gemini",
+            primaryModel=primary_model,
+            actualProvider=actual_provider,
             actualModel=actual_model,
-            fallbackUsed=False,
-            fallbackReason=None,
-            promptVersion=MINUTES_PROMPT_VERSION,
+            fallbackUsed=fallback_used,
+            fallbackReason=fallback_reason,
+            promptVersion=prompt_version,
             schemaVersion=1,
             startedAt=started_at,
             completedAt=completed_at,
@@ -143,7 +168,7 @@ class PipelineService:
                 mode,
                 correlation_id=correlation_id,
             )
-        except ProviderError as error:
+        except (AppError, ProviderError) as error:
             return ProcessResponse(
                 status="partial",
                 rawTranscript=transcription.rawTranscript,

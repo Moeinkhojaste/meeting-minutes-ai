@@ -19,6 +19,7 @@ from app.config import Settings, load_settings, parse_mode
 from app.errors import AppError, InvalidInputError
 from app.orchestration import PipelineService
 from app.providers.gemini import GeminiProvider
+from app.providers.local_llm import LocalLLMProvider
 from app.providers.local_stt import FasterWhisperProvider
 from app.schemas import (
     MinutesRequest,
@@ -40,6 +41,7 @@ def create_app(
         current_settings,
         GeminiProvider(current_settings),
         FasterWhisperProvider(current_settings),
+        LocalLLMProvider(current_settings),
     )
     app = FastAPI(title="Meeting Minutes AI Service", version="1.0.0")
     app.state.settings = current_settings
@@ -106,7 +108,10 @@ def create_app(
                 "geminiConfigured": gemini_configured,
                 "localFallbackConfigured": True,
             },
-            "minutes": {"geminiConfigured": gemini_configured},
+            "minutes": {
+                "geminiConfigured": gemini_configured,
+                "localFallbackConfigured": True,
+            },
         }
 
     @app.post(
