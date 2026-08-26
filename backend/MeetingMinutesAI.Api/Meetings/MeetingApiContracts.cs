@@ -25,12 +25,31 @@ public sealed record AudioResponse(
     DateTimeOffset UploadedAt
 );
 
+public sealed record ProcessingStageResponse(
+    string Stage,
+    string PrimaryProvider,
+    string PrimaryModel,
+    string ActualProvider,
+    string ActualModel,
+    bool FallbackUsed,
+    string? FallbackReason,
+    long DurationMilliseconds
+);
+
+public sealed record ProcessingRunResponse(
+    int AttemptNumber,
+    string RequestedMode,
+    string Status,
+    IReadOnlyList<ProcessingStageResponse> Stages
+);
+
 public sealed record MeetingResponse(
     Guid Id,
     string? Title,
     string Status,
     ProcessingErrorResponse? ProcessingError,
     AudioResponse? Audio,
+    ProcessingRunResponse? LatestRun,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     string Version
@@ -50,6 +69,21 @@ public sealed record MeetingResponse(
                     meeting.Audio.ByteLength,
                     meeting.Audio.DurationMilliseconds,
                     meeting.Audio.UploadedAt),
+            meeting.LatestRun is null
+                ? null
+                : new ProcessingRunResponse(
+                    meeting.LatestRun.AttemptNumber,
+                    meeting.LatestRun.RequestedMode,
+                    meeting.LatestRun.Status,
+                    meeting.LatestRun.Stages.Select(stage => new ProcessingStageResponse(
+                        stage.Stage,
+                        stage.PrimaryProvider,
+                        stage.PrimaryModel,
+                        stage.ActualProvider,
+                        stage.ActualModel,
+                        stage.FallbackUsed,
+                        stage.FallbackReason,
+                        stage.DurationMilliseconds)).ToList()),
             meeting.CreatedAt,
             meeting.UpdatedAt,
             Convert.ToBase64String(meeting.Version));

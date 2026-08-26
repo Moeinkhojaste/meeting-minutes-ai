@@ -53,6 +53,8 @@ internal sealed class MeetingRepository : IMeetingRepository
         await _context.Meetings
             .AsNoTracking()
             .Include(meeting => meeting.AudioFile)
+            .Include(meeting => meeting.ProcessingRuns)
+                .ThenInclude(run => run.Stages)
             .OrderByDescending(meeting => meeting.UpdatedAt)
             .ThenByDescending(meeting => meeting.Id)
             .Skip(skip)

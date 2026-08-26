@@ -388,7 +388,15 @@ public sealed partial class MeetingMediaService(
         string stage,
         ProcessingMode mode)
     {
-        if (!string.Equals(metadata.Stage, stage, StringComparison.Ordinal)
+        var expectedFallbackProvider = stage switch
+        {
+            "transcription" => "faster-whisper",
+            "minutes" => "local-llm",
+            _ => null,
+        };
+
+        if (expectedFallbackProvider is null
+            || !string.Equals(metadata.Stage, stage, StringComparison.Ordinal)
             || metadata.RequestedMode != mode
             || !string.Equals(metadata.PrimaryProvider, "gemini", StringComparison.Ordinal)
             || !string.Equals(
@@ -397,11 +405,11 @@ public sealed partial class MeetingMediaService(
                     ? "gemini-3.5-flash-lite"
                     : "gemini-3.6-flash",
                 StringComparison.Ordinal)
-            || metadata.ActualProvider is not ("gemini" or "faster-whisper")
+            || (metadata.ActualProvider is not "gemini" && !string.Equals(metadata.ActualProvider, expectedFallbackProvider, StringComparison.Ordinal))
             || (metadata.FallbackUsed
                 != string.Equals(
                     metadata.ActualProvider,
-                    "faster-whisper",
+                    expectedFallbackProvider,
                     StringComparison.Ordinal))
             || metadata.SchemaVersion != 1
             || metadata.CompletedAt < metadata.StartedAt

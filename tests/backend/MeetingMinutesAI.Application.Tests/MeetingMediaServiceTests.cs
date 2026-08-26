@@ -170,6 +170,47 @@ public sealed class MeetingMediaServiceTests
         Assert.Equal(ProcessingMode.Quality, meeting.ProcessingRuns.Last().RequestedMode);
     }
 
+    [Fact]
+    public async Task ProcessAsync_WhenTranscriptionUsesFasterWhisperFallback_Succeeds()
+    {
+        var meeting = UploadedMeeting();
+        var state = CreateState(meeting);
+        state.Ai.TranscriptionResult = new AiTranscriptionResult(
+            new AiRawTranscript(1,
+                [new AiRawSegment("seg-0001", "Speaker", 0, 1000, "fa", "متن")]),
+            Metadata("transcription", ProcessingMode.Fast, actualProvider: "faster-whisper", actualModel: "small", fallbackUsed: true),
+            "corr-1");
+
+        var result = await state.Service.ProcessAsync(
+            meeting.Id, ProcessingMode.Fast, [], "corr-1");
+
+        Assert.Equal(MeetingProcessingStatus.Completed, result.Status);
+        Assert.True(meeting.ProcessingRuns.Single().Stages.First().FallbackUsed);
+        Assert.Equal("faster-whisper", meeting.ProcessingRuns.Single().Stages.First().ActualProvider);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenMinutesUsesLocalLlmFallback_Succeeds()
+    {
+        var meeting = UploadedMeeting();
+        var state = CreateState(meeting);
+        state.Ai.MinutesResult = new AiMinutesResult(
+            new AiCleanedTranscript(1,
+                [new AiCleanedSegment("clean-0001", "متن", ["seg-0001"])]),
+            new AiGeneratedMinutes(
+                1, null, null, "خلاصه", [], [],
+                [new AiDecision("تصمیم", ["seg-0001"])], [], [], []),
+            Metadata("minutes", ProcessingMode.Fast, actualProvider: "local-llm", actualModel: "qwen2.5:3b-instruct", fallbackUsed: true),
+            "corr-1");
+
+        var result = await state.Service.ProcessAsync(
+            meeting.Id, ProcessingMode.Fast, [], "corr-1");
+
+        Assert.Equal(MeetingProcessingStatus.Completed, result.Status);
+        Assert.True(meeting.ProcessingRuns.Single().Stages.Last().FallbackUsed);
+        Assert.Equal("local-llm", meeting.ProcessingRuns.Single().Stages.Last().ActualProvider);
+    }
+
     private static TestState CreateState(Meeting meeting)
     {
         var repository = new FakeRepository(meeting);
@@ -214,19 +255,24 @@ public sealed class MeetingMediaServiceTests
             Metadata("minutes", mode),
             correlationId);
 
-    private static AiStageMetadata Metadata(string stage, ProcessingMode mode) => new(
+    private static AiStageMetadata Metadata(
+        string stage,
+        ProcessingMode mode,
+        string actualProvider = "gemini",
+        string? actualModel = null,
+        bool fallbackUsed = false) => new(
         stage,
         mode,
         "gemini",
         mode == ProcessingMode.Fast
             ? "gemini-3.5-flash-lite"
             : "gemini-3.6-flash",
-        "gemini",
-        mode == ProcessingMode.Fast
+        actualProvider,
+        actualModel ?? (mode == ProcessingMode.Fast
             ? "gemini-3.5-flash-lite"
-            : "gemini-3.6-flash",
-        false,
-        null,
+            : "gemini-3.6-flash"),
+        fallbackUsed,
+        fallbackUsed ? "FALLBACK" : null,
         "v1",
         1,
         Now,
@@ -307,6 +353,7 @@ public sealed class MeetingMediaServiceTests
         public ProcessingMode Mode { get; set; } = ProcessingMode.Fast;
         public string CorrelationId { get; set; } = "corr-1";
         public AiServiceException? TranscriptionFailure { get; set; }
+        public AiTranscriptionResult? TranscriptionResult { get; set; }
         public AiServiceException? MinutesFailure { get; set; }
         public AiMinutesResult? MinutesResult { get; set; }
         public Action? BeforeMinutes { get; set; }
@@ -315,7 +362,7 @@ public sealed class MeetingMediaServiceTests
             Stream audio, string fileName, string contentType, ProcessingMode mode,
             string correlationId, CancellationToken cancellationToken = default) =>
             TranscriptionFailure is null
-                ? Task.FromResult(ValidTranscription(Mode, CorrelationId))
+                ? Task.FromResult(TranscriptionResult ?? ValidTranscription(Mode, CorrelationId))
                 : Task.FromException<AiTranscriptionResult>(TranscriptionFailure);
 
         public Task<AiMinutesResult> GenerateMinutesAsync(
