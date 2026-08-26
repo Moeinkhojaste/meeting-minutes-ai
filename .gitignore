@@ -498,3 +498,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Local sample media (never commit audio recordings)
+sample_audios/
