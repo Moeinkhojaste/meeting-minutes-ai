@@ -4,16 +4,17 @@ Persian title: **سامانه هوشمند تولید صورت‌جلسه**
 
 Meeting Minutes AI is a university MVP for converting Persian or English
 meeting audio into an editable transcript and structured meeting minutes.
-Phase 3 adds a Gemini-first Python AI service while preserving the verified
-local CUDA/faster-whisper baseline as transcription fallback and scientific
-comparator.
+Phase 3 adds a Gemini-first Python AI service with local fallbacks for both
+stages: faster-whisper for speech-to-text and an Ollama-compatible LLM
+(default `qwen2.5:3b-instruct`) for transcript cleaning and minutes
+generation.
 
 ## Repository structure
 
 ```text
 frontend/    React, TypeScript, Vite foundation, meeting dashboard, review UI, and export features
 backend/     ASP.NET Core Clean Architecture backend and SQL Server persistence
-ai-service/  Python STT evaluation and transcription tools
+ai-service/  Gemini-first FastAPI AI service with local STT and LLM fallbacks
 tests/       Cross-project and backend tests
 docs/        Charter, setup, evaluation, and technical documentation
 ```
@@ -22,7 +23,8 @@ docs/        Charter, setup, evaluation, and technical documentation
 
 - Python 3.12.10
 - Node.js 24.18.0 LTS and npm 11.17.0
-- .NET SDK 10.0.302 LTS
+- .NET SDK 9.0.304 pinned in `global.json` (roll-forward to later majors is
+  permitted)
 - FFmpeg/FFprobe 8.1.2
 - Git 2.50.1 for Windows
 - NVIDIA driver 596.49; CUDA-capable RTX 3060 Laptop GPU
@@ -117,7 +119,9 @@ The backend exposes:
 - `GET /api/meetings/{id}/minutes/generated`
 
 Meeting responses expose the explicit processing status as a lower-camel-case
-string. Updates and deletes require the current quoted `ETag` in an
+string and include a `latestRun` view with per-stage provider, model,
+fallback, and duration metadata that the frontend renders as a model
+provenance card. Updates and deletes require the current quoted `ETag` in an
 `If-Match` header; stale versions return `409 Conflict`. Deletion is rejected
 while a meeting is queued, transcribing, or generating minutes. Upload and
 processing also require `If-Match`. Audio is signature-checked while streaming
@@ -125,7 +129,15 @@ to private local storage with a 500 MiB limit. Processing synchronously calls
 the AI service in two stages so the raw transcript is committed before minutes
 generation. A stage-two failure returns a partial meeting while retaining raw
 output. Deletion coordinates removal of both the local object and database
-aggregate. See [backend AI integration](docs/backend-ai-integration.md).
+aggregate. Meetings carry an optional `UserId`; requests may pass an
+`X-User-Id` header, and meetings owned by another user are hidden or rejected.
+This is preliminary ownership support; real authentication is still not
+implemented. See [backend AI integration](docs/backend-ai-integration.md).
+
+In development the API listens on `http://localhost:5023` (launch settings),
+allows any CORS origin, and exposes the `ETag` header to browsers. The Vite
+dev server proxies `/api` requests to it, so the frontend works same-origin by
+default.
 
 Run the frontend separately:
 
@@ -152,7 +164,15 @@ Pop-Location
 ```
 
 The AI service exposes `/health/live`, `/health/ready`,
-`/v1/transcriptions`, `/v1/minutes`, and `/v1/process`. See the
+`/v1/transcriptions`, `/v1/minutes`, and `/v1/process`. Transcription is
+Gemini-first with faster-whisper fallback. Minutes generation is Gemini-first
+with a local LLM fallback served through any OpenAI-compatible endpoint such
+as Ollama (`MM_AI_LOCAL_LLM_BASE_URL`, default
+`http://localhost:11434/v1`, model `qwen2.5:3b-instruct`). When every minutes
+provider fails, `/v1/process` returns a partial result retaining the raw
+transcript. Health readiness reports whether Gemini and each local fallback
+are configured, and every stage response carries provider, model, fallback,
+and prompt-version metadata. See the
 [AI-service API](docs/ai-service-api.md).
 
 Validate the private dataset manifest without reading or committing media:
@@ -168,20 +188,24 @@ aggregate-output rules are documented in the
 
 ## Privacy and limitations
 
-
 - Every accepted meeting is sent to Gemini first, including private meetings.
   The free Gemini tier may process or retain data under Google's current terms.
-- faster-whisper is only a technical transcription fallback. Transcript
-  cleaning and minutes generation have no local fallback in Phase 3.
+- faster-whisper remains only a technical transcription fallback. Minutes
+  generation falls back to a local OpenAI-compatible LLM endpoint
+  (`qwen2.5:3b-instruct` through Ollama by default), which keeps that stage on
+  the local machine when Gemini fails or is unconfigured.
 - Only generated or explicitly permitted anonymized fixtures may be committed.
 - `large-v3-turbo` is the initial STT checkpoint, not an accuracy claim. Its
   current one-sample normalized WER is 59.37%; broader Phase 2 evaluation is
   required.
-- The repository now contains meeting persistence, CRUD, secure local upload,
-  synchronous staged AI orchestration, output retrieval, a complete frontend meeting
-  dashboard and review UI, and multi-format export (Markdown, JSON, Text, Print/PDF).
-  It does not yet implement authentication/ownership, deployment object storage, or a
-  background job queue system.
+- The repository now contains meeting persistence with preliminary per-user
+  ownership (`UserId` column plus `X-User-Id` header checks), CRUD, secure
+  local upload, synchronous staged AI orchestration with stage-level
+  provider/model provenance shown in the review UI, Persian-first typography
+  (Vazirmatn) with bi-directional text alignment, a complete frontend meeting
+  dashboard and review UI, and multi-format export (Markdown, JSON, Text,
+  Print/PDF). It does not yet implement real authentication, deployment object
+  storage, or a background job queue system.
 
 The approved scope and exclusions are recorded in the
 [project charter](docs/project-charter.md).
