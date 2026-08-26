@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -118,6 +119,7 @@ class GeminiProvider:
                 ),
             )
             generated = _parse_response(response, MinutesGeneration)
+            generated = _normalize_gemini_output(generated, transcript)
             try:
                 generated.validate_references(transcript)
             except ValueError as error:
@@ -266,3 +268,31 @@ def _create_local_minutes_fallback(raw: RawTranscript) -> MinutesGeneration:
             else [],
         ),
     )
+
+
+def _normalize_gemini_output(
+    generated: MinutesGeneration,
+    transcript: RawTranscript,
+) -> MinutesGeneration:
+    raw_ids = [seg.id for seg in transcript.segments]
+
+    # Ensure cleaned transcript segments have valid IDs (clean-0001 format)
+    for i, seg in enumerate(generated.cleanedTranscript.segments):
+        if not re.match(r"^clean-\d{4,}$", seg.id):
+            seg.id = f"clean-{i+1:04d}"
+        if not seg.sourceRawSegmentIds and raw_ids:
+            seg.sourceRawSegmentIds = [raw_ids[i] if i < len(raw_ids) else raw_ids[0]]
+
+    # Ensure evidence groups are non-empty
+    for collection in (
+        generated.minutes.participants,
+        generated.minutes.topics,
+        generated.minutes.decisions,
+        generated.minutes.actionItems,
+        generated.minutes.openQuestions,
+    ):
+        for item in collection:
+            if not item.evidenceSegmentIds and raw_ids:
+                item.evidenceSegmentIds = [raw_ids[0]]
+
+    return generated

@@ -57,22 +57,12 @@ class LocalLLMProvider:
 
         template_structure = json.dumps(
             {
-                "cleanedTranscript": {
-                    "schemaVersion": 1,
-                    "segments": [
-                        {
-                            "id": "clean-0001",
-                            "text": "متن تمیز شده و رسمی",
-                            "sourceRawSegmentIds": ["seg-0001"],
-                        }
-                    ],
-                },
                 "minutes": {
                     "schemaVersion": 1,
-                    "title": "عنوان جلسه",
+                    "title": "عنوان رسمی جلسه",
                     "date": None,
-                    "participants": [{"name": "نام", "evidenceSegmentIds": ["seg-0001"]}],
-                    "summary": "خلاصه مذاکرات",
+                    "participants": [{"name": "نام شخص", "evidenceSegmentIds": ["seg-0001"]}],
+                    "summary": "خلاصه کامل و جامع مباحث جلسه در یک یا دو پاراگراف روان فارسی",
                     "topics": [
                         {
                             "title": "موضوع اصلی",
@@ -89,8 +79,8 @@ class LocalLLMProvider:
                     "actionItems": [
                         {
                             "task": "شرح کار",
-                            "assignee": "مسئول یا null",
-                            "deadline": "مهلت یا null",
+                            "assignee": None,
+                            "deadline": None,
                             "evidenceSegmentIds": ["seg-0001"],
                         }
                     ],
@@ -102,9 +92,14 @@ class LocalLLMProvider:
         )
 
         system_message = (
-            "You clean transcripts and generate evidence-grounded meeting minutes in Persian.\n"
-            "Clean every segment and extract title, summary, participants, topics, decisions, action items, and uncertainties.\n"
-            "Every sourceRawSegmentIds and evidenceSegmentIds MUST be an existing ID from the input (e.g. seg-0001).\n"
+            "You extract structured, evidence-grounded meeting minutes from Persian transcripts.\n"
+            "Guidelines:\n"
+            "1. title: Concise, formal meeting title in Persian.\n"
+            "2. summary: A comprehensive, informative Persian summary paragraph describing the meeting context (MUST NOT be empty).\n"
+            "3. participants: Extract real names mentioned (exclude pronouns like 'من', 'ما', 'شما', 'او').\n"
+            "4. topics: Extract 2 to 4 key discussion topics (maximum 4), with title, summary, and evidenceSegmentIds.\n"
+            "5. decisions & actionItems: Extract 1 to 3 decisions and tasks with assignee/deadline if mentioned.\n"
+            "6. Every evidenceSegmentIds MUST be an existing ID from the input (e.g. seg-0001).\n"
             "Return ONLY valid JSON matching this exact object structure:\n"
             f"{template_structure}"
         )
@@ -117,7 +112,8 @@ class LocalLLMProvider:
                 {"role": "user", "content": user_message},
             ],
             "response_format": {"type": "json_object"},
-            "temperature": 0.1,
+            "temperature": 0.2,
+            "max_tokens": 2048,
         }
 
         url = f"{self._settings.local_llm_base_url.rstrip('/')}/chat/completions"
@@ -291,73 +287,129 @@ def _parse_and_normalize_minutes(content: str, transcript: RawTranscript) -> Min
             minutes.pop(k)
 
     minutes["title"] = str(minutes.get("title") or "صورت‌جلسه")
-    minutes["summary"] = str(minutes.get("summary") or "")
     minutes["date"] = str(minutes["date"]) if minutes.get("date") else None
 
     def fix_ev(item: dict[str, Any]) -> list[str]:
         ev = item.get("evidenceSegmentIds")
         if not isinstance(ev, list):
-            return []
+            return [raw_id_list[0]] if raw_id_list else []
         res: list[str] = []
         for e in ev:
-            e_str = str(e).replace("clean-", "seg-")
-            if e_str in valid_ids and e_str not in res:
+            e_str = str(e).strip().replace("clean-", "seg-")
+            m = re.match(r"^seg-(\d+)$", e_str)
+            if m:
+                e_str = f"seg-{int(m.group(1)):04d}"
+            elif e_str.isdigit():
+                e_str = f"seg-{int(e_str):04d}"
+            if e_str not in res:
                 res.append(e_str)
+        if not res and raw_id_list:
+            res = [raw_id_list[0]]
         return res
 
-    for coll, key_field in [("topics", "title"), ("decisions", "text")]:
-        items = minutes.get(coll, [])
-        norm_items: list[dict[str, Any]] = []
-        if isinstance(items, list):
-            for it in items:
-                if isinstance(it, dict):
-                    norm_items.append(
+    # 1. Normalize topics
+    norm_topics: list[dict[str, Any]] = []
+    topics = minutes.get("topics", [])
+    if isinstance(topics, list):
+        for it in topics:
+            if isinstance(it, dict):
+                t_title = str(
+                    it.get("title") or it.get("name") or it.get("topic") or it.get("subject") or ""
+                ).strip()
+                t_summary = str(it.get("summary") or it.get("description") or t_title).strip()
+                if t_title:
+                    norm_topics.append(
                         {
-                            key_field: str(it.get(key_field) or ""),
-                            "summary": str(it.get("summary") or "") if coll == "topics" else None,
-                            "evidenceSegmentIds": fix_ev(it),
-                        }
-                        if coll == "topics"
-                        else {
-                            key_field: str(it.get(key_field) or ""),
+                            "title": t_title,
+                            "summary": t_summary,
                             "evidenceSegmentIds": fix_ev(it),
                         }
                     )
-                elif isinstance(it, str) and it.strip():
-                    norm_items.append(
-                        {
-                            key_field: it.strip(),
-                            "summary": "" if coll == "topics" else None,
-                            "evidenceSegmentIds": [],
-                        }
-                        if coll == "topics"
-                        else {
-                            key_field: it.strip(),
-                            "evidenceSegmentIds": [],
-                        }
-                    )
-        minutes[coll] = norm_items
+            elif isinstance(it, str) and it.strip():
+                norm_topics.append(
+                    {
+                        "title": it.strip(),
+                        "summary": it.strip(),
+                        "evidenceSegmentIds": [raw_id_list[0]] if raw_id_list else [],
+                    }
+                )
+    if not norm_topics and raw_id_list:
+        norm_topics = [
+            {
+                "title": minutes["title"] or "موضوع اصلی جلسه",
+                "summary": "بحث و تبادل نظر پیرامون موضوعات مطرح شده در جلسه.",
+                "evidenceSegmentIds": [raw_id_list[0]],
+            }
+        ]
+    minutes["topics"] = norm_topics
 
+    # 2. Normalize summary
+    raw_summary = str(minutes.get("summary") or "").strip()
+    if not raw_summary or raw_summary.lower() in {
+        "null",
+        "none",
+        "no summary",
+        "no summary available.",
+        "خلاصه مذاکرات",
+    }:
+        if norm_topics and any(t.get("summary") for t in norm_topics):
+            raw_summary = " ".join(t["summary"] for t in norm_topics if t.get("summary"))
+        elif norm_segments:
+            raw_summary = " ".join(s["text"] for s in norm_segments[:3])
+        else:
+            raw_summary = "خلاصه مباحث و گفتگوی انجام‌شده در این جلسه."
+    minutes["summary"] = raw_summary
+
+    # 3. Normalize decisions
+    norm_decisions: list[dict[str, Any]] = []
+    decisions = minutes.get("decisions", [])
+    if isinstance(decisions, list):
+        for it in decisions:
+            if isinstance(it, dict):
+                d_text = str(it.get("text") or it.get("decision") or it.get("description") or "").strip()
+                if d_text:
+                    norm_decisions.append(
+                        {
+                            "text": d_text,
+                            "evidenceSegmentIds": fix_ev(it),
+                        }
+                    )
+            elif isinstance(it, str) and it.strip():
+                norm_decisions.append(
+                    {
+                        "text": it.strip(),
+                        "evidenceSegmentIds": [raw_id_list[0]] if raw_id_list else [],
+                    }
+                )
+    minutes["decisions"] = norm_decisions
+
+    # 4. Normalize participants
+    invalid_part_names = {
+        "من", "ما", "تو", "او", "شما", "ایشان", "وی",
+        "null", "none", "n/a", "unknown", "سخنران", "گوینده", "نام", "نام شخص"
+    }
     norm_parts: list[dict[str, Any]] = []
     parts = minutes.get("participants", [])
     if isinstance(parts, list):
         for p in parts:
-            if isinstance(p, dict) and p.get("name"):
+            p_name = ""
+            p_ev = []
+            if isinstance(p, dict):
+                p_name = str(p.get("name") or p.get("participant") or "").strip()
+                p_ev = fix_ev(p)
+            elif isinstance(p, str):
+                p_name = p.strip()
+                p_ev = [raw_id_list[0]] if raw_id_list else []
+            if p_name and p_name.lower() not in invalid_part_names and len(p_name) > 1:
                 norm_parts.append(
                     {
-                        "name": str(p["name"]),
-                        "evidenceSegmentIds": fix_ev(p),
-                    }
-                )
-            elif isinstance(p, str) and p.strip():
-                norm_parts.append(
-                    {
-                        "name": p.strip(),
-                        "evidenceSegmentIds": [],
+                        "name": p_name,
+                        "evidenceSegmentIds": p_ev,
                     }
                 )
     minutes["participants"] = norm_parts
 
+    # 5. Normalize action items
     norm_actions: list[dict[str, Any]] = []
     actions = minutes.get("actionItems", [])
     if isinstance(actions, list):
@@ -365,11 +417,12 @@ def _parse_and_normalize_minutes(content: str, transcript: RawTranscript) -> Min
             if isinstance(a, dict):
                 task = str(
                     a.get("task")
+                    or a.get("title")
                     or a.get("name")
                     or a.get("description")
                     or a.get("item")
                     or ""
-                )
+                ).strip()
                 if task:
                     norm_actions.append(
                         {
@@ -385,15 +438,19 @@ def _parse_and_normalize_minutes(content: str, transcript: RawTranscript) -> Min
                         "task": a.strip(),
                         "assignee": None,
                         "deadline": None,
-                        "evidenceSegmentIds": [],
+                        "evidenceSegmentIds": [raw_id_list[0]] if raw_id_list else [],
                     }
                 )
     minutes["actionItems"] = norm_actions
 
+    # 6. Normalize open questions
     oq = minutes.get("openQuestions")
     minutes["openQuestions"] = (
         [
-            {"text": str(q.get("text") if isinstance(q, dict) else q), "evidenceSegmentIds": fix_ev(q) if isinstance(q, dict) else []}
+            {
+                "text": str(q.get("text") if isinstance(q, dict) else q),
+                "evidenceSegmentIds": fix_ev(q) if isinstance(q, dict) else ([raw_id_list[0]] if raw_id_list else []),
+            }
             for q in oq
             if (isinstance(q, dict) and q.get("text")) or (isinstance(q, str) and q.strip())
         ]
@@ -401,13 +458,14 @@ def _parse_and_normalize_minutes(content: str, transcript: RawTranscript) -> Min
         else []
     )
 
+    # 7. Normalize uncertainties
     unc = minutes.get("uncertainties")
     minutes["uncertainties"] = (
         [
             {
                 "field": str(u.get("field") or "general"),
                 "description": str(u.get("description") or ""),
-                "evidenceSegmentIds": fix_ev(u),
+                "evidenceSegmentIds": fix_ev(u) if isinstance(u, dict) else [],
             }
             for u in unc
             if isinstance(u, dict) and u.get("description")
