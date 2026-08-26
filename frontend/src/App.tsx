@@ -55,11 +55,13 @@ function App() {
     fetchMeetings()
   }, [fetchMeetings])
 
-  const fetchMeetingDetails = useCallback(async (meeting: MeetingResponse) => {
-    setDetailLoading(true)
-    setRawTranscript(null)
-    setCleanedTranscript(null)
-    setMinutes(null)
+  const fetchMeetingDetails = useCallback(async (meeting: MeetingResponse, silent = false) => {
+    if (!silent) {
+      setDetailLoading(true)
+      setRawTranscript(null)
+      setCleanedTranscript(null)
+      setMinutes(null)
+    }
 
     try {
       const refreshedMeeting = await meetingService.getMeeting(meeting.id)
@@ -83,28 +85,44 @@ function App() {
 
         if (refreshedMeeting.status === 'partiallyCompleted') {
           setActiveTab('transcripts')
+        } else if (refreshedMeeting.status === 'completed') {
+          setActiveTab('minutes')
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch meeting details')
+      if (!silent) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch meeting details')
+      }
     } finally {
-      setDetailLoading(false)
+      if (!silent) {
+        setDetailLoading(false)
+      }
     }
   }, [])
 
-  // Auto-polling for active processing status
+  // Auto-polling for active processing status (e.g. if page reloads during processing)
   useEffect(() => {
     if (!selectedMeeting) return
 
     const activeStatuses = ['queued', 'transcribing', 'generatingMinutes']
     if (!activeStatuses.includes(selectedMeeting.status)) return
 
-    const interval = setInterval(() => {
-      fetchMeetingDetails(selectedMeeting)
-    }, 3000)
+    const interval = setInterval(async () => {
+      try {
+        const current = await meetingService.getMeeting(selectedMeeting.id)
+        setSelectedMeeting(current)
+        if (!activeStatuses.includes(current.status)) {
+          clearInterval(interval)
+          await fetchMeetingDetails(current, true)
+          await fetchMeetings()
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    }, 1200)
 
     return () => clearInterval(interval)
-  }, [selectedMeeting, fetchMeetingDetails])
+  }, [selectedMeeting?.id, selectedMeeting?.status, fetchMeetingDetails, fetchMeetings])
 
   const handleCreateMeeting = async (title?: string) => {
     const created = await meetingService.createMeeting(title)
@@ -138,18 +156,43 @@ function App() {
 
   const handleStartProcessing = async () => {
     if (!selectedMeeting) return
+    const meetingId = selectedMeeting.id
     try {
       setProcessing(true)
       setError(null)
+      // Set optimistic transcribing status immediately so UI displays live stage progress
+      setSelectedMeeting((prev) => (prev ? { ...prev, status: 'transcribing' } : null))
+
+      // In-flight active polling timer
+      const pollTimer = setInterval(async () => {
+        try {
+          const current = await meetingService.getMeeting(meetingId)
+          setSelectedMeeting(current)
+          if (['completed', 'partiallyCompleted', 'failed'].includes(current.status)) {
+            clearInterval(pollTimer)
+          }
+        } catch {
+          // ignore
+        }
+      }, 1200)
+
       const updated = await meetingService.processMeeting(
-        selectedMeeting.id,
+        meetingId,
         processMode,
         selectedMeeting.version
       )
+      clearInterval(pollTimer)
       setSelectedMeeting(updated)
+      await fetchMeetingDetails(updated, false)
       await fetchMeetings()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Processing failed to start')
+      try {
+        const refreshed = await meetingService.getMeeting(meetingId)
+        setSelectedMeeting(refreshed)
+      } catch {
+        // ignore
+      }
     } finally {
       setProcessing(false)
     }
@@ -255,7 +298,7 @@ function App() {
             </div>
 
             {/* Model Provenance Card displaying executed models */}
-            <ModelProvenanceCard run={selectedMeeting.latestRun} />
+            <ModelProvenanceCard run={selectedMeeting.latestRun} dir={dir} />
           </div>
 
           {error && <ErrorAlert message={error} />}
@@ -297,14 +340,28 @@ function App() {
                   borderTopColor: '#2563eb',
                   borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite',
+                  flexShrink: 0,
                 }}
               />
-              <div>
-                <strong style={{ color: '#1e3a8a', fontSize: '0.95rem' }}>
-                  Processing in progress...
-                </strong>
-                <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: '#1d4ed8' }}>
-                  Current status: <StatusBadge status={selectedMeeting.status} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                  <strong style={{ color: '#1e3a8a', fontSize: '0.95rem' }}>
+                    {selectedMeeting.status === 'transcribing' && (
+                      dir === 'rtl' ? '🎙️ مرحله ۱: تبدیل گفتار به متن (پیاده‌سازی صوت)...' : '🎙️ Stage 1: Speech-to-Text Transcription in progress...'
+                    )}
+                    {selectedMeeting.status === 'generatingMinutes' && (
+                      dir === 'rtl' ? '📝 مرحله ۲: استخراج صورت‌جلسه، خلاصه‌سازی و پالایش متن...' : '📝 Stage 2: Extracting minutes, topics & cleaning transcript...'
+                    )}
+                    {selectedMeeting.status === 'queued' && (
+                      dir === 'rtl' ? '⏳ در صف پردازش هوش مصنوعی...' : '⏳ Queued for processing...'
+                    )}
+                  </strong>
+                  <StatusBadge status={selectedMeeting.status} />
+                </div>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#1d4ed8' }}>
+                  {dir === 'rtl'
+                    ? 'سیستم در حال پردازش در لحظه است. وضعیت به صورت خودکار به‌روزرسانی می‌شود.'
+                    : 'Processing is running live. Stages update automatically in real-time.'}
                 </p>
               </div>
             </div>
