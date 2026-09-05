@@ -15,6 +15,36 @@ export class ApiError extends Error {
   }
 }
 
+let cachedToken: string | null = null
+
+export function setAuthToken(token: string | null): void {
+  cachedToken = token
+  if (token) {
+    try {
+      localStorage.setItem('auth_token', token)
+    } catch {
+      // Ignore if localStorage unavailable
+    }
+  } else {
+    try {
+      localStorage.removeItem('auth_token')
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+export function getAuthToken(): string | null {
+  if (!cachedToken) {
+    try {
+      cachedToken = localStorage.getItem('auth_token')
+    } catch {
+      cachedToken = null
+    }
+  }
+  return cachedToken
+}
+
 function formatIfMatchHeader(version?: string): Record<string, string> {
   if (!version) return {}
   const cleanVersion = version.trim()
@@ -30,10 +60,12 @@ export async function fetchApi<T>(
 ): Promise<T> {
   const { version, headers: customHeaders, ...customOptions } = options
   const url = `${apiBaseUrl.replace(/\/+$/, '')}${endpoint}`
+  const token = getAuthToken()
 
   const headers: Record<string, string> = {
     Accept: 'application/json',
     ...formatIfMatchHeader(version),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(customHeaders as Record<string, string>),
   }
 
