@@ -1,5 +1,6 @@
 using MeetingMinutesAI.Application.Abstractions.Persistence;
 using MeetingMinutesAI.Domain.Meetings;
+using MeetingMinutesAI.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeetingMinutesAI.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ public class MeetingMinutesDbContext : DbContext, IUnitOfWork
     {
     }
 
+    public DbSet<User> Users => Set<User>();
     public DbSet<Meeting> Meetings => Set<Meeting>();
     public DbSet<AudioFile> AudioFiles => Set<AudioFile>();
     public DbSet<RawTranscript> RawTranscripts => Set<RawTranscript>();

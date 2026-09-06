@@ -58,6 +58,20 @@ export interface MeetingPageResponse {
   totalCount: number
 }
 
+export interface UserResponse {
+  id: string
+  email: string
+  fullName: string
+  createdAt: string
+}
+
+export interface AuthResponse {
+  token: string
+  tokenType: string
+  user: UserResponse
+  expiresAt: string
+}
+
 export interface TranscriptSegment {
   startTime?: number | null
   endTime?: number | null

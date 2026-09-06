@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics;
+using MeetingMinutesAI.Application.Auth;
 using MeetingMinutesAI.Application.Meetings;
 using MeetingMinutesAI.Application.Abstractions.Ai;
 using MeetingMinutesAI.Application.Abstractions.Storage;
@@ -51,10 +52,22 @@ public sealed class SafeExceptionHandler(
                 upload.Code,
                 upload.SafeMessage),
             MeetingProcessingException processing => MapProcessing(processing.Failure),
-            DomainRuleException => new ErrorDetails(
+            UserAlreadyExistsException => new ErrorDetails(
+                StatusCodes.Status409Conflict,
+                "user_already_exists",
+                "A user with this email already exists."),
+            InvalidCredentialsException => new ErrorDetails(
+                StatusCodes.Status401Unauthorized,
+                "invalid_credentials",
+                "Invalid email or password."),
+            UserNotFoundException => new ErrorDetails(
+                StatusCodes.Status404NotFound,
+                "user_not_found",
+                "The requested user was not found."),
+            DomainRuleException domainRule => new ErrorDetails(
                 StatusCodes.Status400BadRequest,
                 "invalid_request",
-                "The request is invalid."),
+                domainRule.Message),
             _ => new ErrorDetails(
                 StatusCodes.Status500InternalServerError,
                 "internal_error",
