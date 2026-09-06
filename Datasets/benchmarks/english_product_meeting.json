@@ -1,0 +1,189 @@
+{
+  "name": "english_product_meeting",
+  "language": "en",
+  "description": "English product review meeting with 2 speakers, 1 decision, and 2 action items.",
+  "reference": {
+    "rawTranscript": {
+      "schemaVersion": 1,
+      "segments": [
+        {
+          "id": "seg-0001",
+          "speaker": "Alice",
+          "startMilliseconds": 0,
+          "endMilliseconds": 6000,
+          "language": "en",
+          "text": "Good morning Bob, let's review the Q3 product deliverables."
+        },
+        {
+          "id": "seg-0002",
+          "speaker": "Bob",
+          "startMilliseconds": 6000,
+          "endMilliseconds": 14000,
+          "language": "en",
+          "text": "Good morning Alice, we passed the initial security compliance checks yesterday."
+        },
+        {
+          "id": "seg-0003",
+          "speaker": "Alice",
+          "startMilliseconds": 14000,
+          "endMilliseconds": 24000,
+          "language": "en",
+          "text": "That is great news. We decided to approve the single sign-on integration for the enterprise tier."
+        },
+        {
+          "id": "seg-0004",
+          "speaker": "Bob",
+          "startMilliseconds": 24000,
+          "endMilliseconds": 34000,
+          "language": "en",
+          "text": "Excellent. I will finalize the OAuth documentation by Friday."
+        },
+        {
+          "id": "seg-0005",
+          "speaker": "Alice",
+          "startMilliseconds": 34000,
+          "endMilliseconds": 44000,
+          "language": "en",
+          "text": "And I will schedule the staging deployment by next Tuesday."
+        }
+      ]
+    },
+    "minutes": {
+      "schemaVersion": 1,
+      "title": "Q3 Product Deliverables Review",
+      "date": "2026-09-06",
+      "participants": [
+        {
+          "name": "Alice",
+          "evidenceSegmentIds": ["seg-0001", "seg-0003", "seg-0005"]
+        },
+        {
+          "name": "Bob",
+          "evidenceSegmentIds": ["seg-0002", "seg-0004"]
+        }
+      ],
+      "summary": "The team reviewed Q3 deliverables, approved single sign-on for enterprise, and assigned documentation and deployment deadlines.",
+      "topics": [
+        {
+          "title": "Security & SSO",
+          "summary": "Compliance check passed and SSO feature approved.",
+          "evidenceSegmentIds": ["seg-0002", "seg-0003"]
+        }
+      ],
+      "decisions": [
+        {
+          "text": "Approve the single sign-on integration for the enterprise tier.",
+          "evidenceSegmentIds": ["seg-0003"]
+        }
+      ],
+      "actionItems": [
+        {
+          "task": "Finalize OAuth documentation",
+          "assignee": "Bob",
+          "deadline": "Friday",
+          "evidenceSegmentIds": ["seg-0004"]
+        },
+        {
+          "task": "Schedule staging deployment",
+          "assignee": "Alice",
+          "deadline": "Tuesday",
+          "evidenceSegmentIds": ["seg-0005"]
+        }
+      ],
+      "openQuestions": [],
+      "uncertainties": []
+    }
+  },
+  "hypothesis": {
+    "rawTranscript": {
+      "schemaVersion": 1,
+      "segments": [
+        {
+          "id": "seg-0001",
+          "speaker": "Alice",
+          "startMilliseconds": 30,
+          "endMilliseconds": 5980,
+          "language": "en",
+          "text": "Good morning Bob let's review the Q3 product deliverables."
+        },
+        {
+          "id": "seg-0002",
+          "speaker": "Bob",
+          "startMilliseconds": 6010,
+          "endMilliseconds": 14050,
+          "language": "en",
+          "text": "Good morning Alice we passed the initial security compliance checks yesterday."
+        },
+        {
+          "id": "seg-0003",
+          "speaker": "Alice",
+          "startMilliseconds": 14050,
+          "endMilliseconds": 23950,
+          "language": "en",
+          "text": "That is great news. We decided to approve the single sign-on integration for the enterprise tier."
+        },
+        {
+          "id": "seg-0004",
+          "speaker": "Bob",
+          "startMilliseconds": 24000,
+          "endMilliseconds": 34000,
+          "language": "en",
+          "text": "Excellent. I will finalize the OAuth documentation by Friday."
+        },
+        {
+          "id": "seg-0005",
+          "speaker": "Alice",
+          "startMilliseconds": 34020,
+          "endMilliseconds": 44000,
+          "language": "en",
+          "text": "And I will schedule the staging deployment by next Tuesday."
+        }
+      ]
+    },
+    "minutes": {
+      "schemaVersion": 1,
+      "title": "Q3 Product Deliverables Review",
+      "date": "2026-09-06",
+      "participants": [
+        {
+          "name": "Alice",
+          "evidenceSegmentIds": ["seg-0001", "seg-0003", "seg-0005"]
+        },
+        {
+          "name": "Bob",
+          "evidenceSegmentIds": ["seg-0002", "seg-0004"]
+        }
+      ],
+      "summary": "The team approved SSO for enterprise and established tasks for OAuth docs and staging deployment.",
+      "topics": [
+        {
+          "title": "Security & SSO",
+          "summary": "Compliance pass and SSO approval.",
+          "evidenceSegmentIds": ["seg-0002", "seg-0003"]
+        }
+      ],
+      "decisions": [
+        {
+          "text": "Approve the single sign-on integration for the enterprise tier.",
+          "evidenceSegmentIds": ["seg-0003"]
+        }
+      ],
+      "actionItems": [
+        {
+          "task": "Finalize OAuth documentation",
+          "assignee": "Bob",
+          "deadline": "Friday",
+          "evidenceSegmentIds": ["seg-0004"]
+        },
+        {
+          "task": "Schedule staging deployment",
+          "assignee": "Alice",
+          "deadline": "Tuesday",
+          "evidenceSegmentIds": ["seg-0005"]
+        }
+      ],
+      "openQuestions": [],
+      "uncertainties": []
+    }
+  }
+}
