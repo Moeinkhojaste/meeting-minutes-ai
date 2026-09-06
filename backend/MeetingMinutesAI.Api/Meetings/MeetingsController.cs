@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using MeetingMinutesAI.Api.Errors;
 using MeetingMinutesAI.Application.Meetings;
 using MeetingMinutesAI.Domain.Meetings;
@@ -209,8 +210,16 @@ public sealed class MeetingsController(
         return Ok(response);
     }
 
-    private string? GetUserId() =>
-        Request.Headers.TryGetValue("X-User-Id", out var values) ? values.FirstOrDefault() : null;
+    private string? GetUserId()
+    {
+        var claimId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrWhiteSpace(claimId))
+        {
+            return claimId;
+        }
+
+        return Request.Headers.TryGetValue("X-User-Id", out var values) ? values.FirstOrDefault() : null;
+    }
 
     private ObjectResult? ParseEntityTag(out byte[] version)
     {
