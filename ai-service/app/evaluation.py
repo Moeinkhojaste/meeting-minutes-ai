@@ -71,6 +71,35 @@ def evaluate_pipeline(
         (item.task, item.evidenceSegmentIds)
         for item in hypothesis.minutes.actionItems
     )
+    reference_participants = _facts(
+        (item.name, item.evidenceSegmentIds)
+        for item in reference.minutes.participants
+    )
+    hypothesis_participants = _facts(
+        (item.name, item.evidenceSegmentIds)
+        for item in hypothesis.minutes.participants
+    )
+    reference_assignees = _facts(
+        (item.assignee, item.evidenceSegmentIds)
+        for item in reference.minutes.actionItems
+        if item.assignee
+    )
+    hypothesis_assignees = _facts(
+        (item.assignee, item.evidenceSegmentIds)
+        for item in hypothesis.minutes.actionItems
+        if item.assignee
+    )
+    reference_deadlines = _facts(
+        (item.deadline, item.evidenceSegmentIds)
+        for item in reference.minutes.actionItems
+        if item.deadline
+    )
+    hypothesis_deadlines = _facts(
+        (item.deadline, item.evidenceSegmentIds)
+        for item in hypothesis.minutes.actionItems
+        if item.deadline
+    )
+
     decision_metrics = _extraction_metrics(
         reference_decisions,
         hypothesis_decisions,
@@ -79,9 +108,31 @@ def evaluate_pipeline(
         reference_actions,
         hypothesis_actions,
     )
-    reference_all = reference_decisions | reference_actions
-    hypothesis_all = hypothesis_decisions | hypothesis_actions
+    participant_metrics = _extraction_metrics(
+        reference_participants,
+        hypothesis_participants,
+    )
+    assignee_metrics = _extraction_metrics(
+        reference_assignees,
+        hypothesis_assignees,
+    )
+    deadline_metrics = _extraction_metrics(
+        reference_deadlines,
+        hypothesis_deadlines,
+    )
+
+    reference_all = (
+        reference_decisions
+        | reference_actions
+        | reference_participants
+    )
+    hypothesis_all = (
+        hypothesis_decisions
+        | hypothesis_actions
+        | hypothesis_participants
+    )
     matched_all = set(reference_all) & set(hypothesis_all)
+    overall_metrics = _extraction_metrics(reference_all, hypothesis_all)
 
     return {
         "schemaVersion": 1,
@@ -106,6 +157,10 @@ def evaluate_pipeline(
         "extraction": {
             "decisions": decision_metrics,
             "actionItems": action_metrics,
+            "participants": participant_metrics,
+            "assignees": assignee_metrics,
+            "deadlines": deadline_metrics,
+            "overall": overall_metrics,
             "evidenceAccuracy": _evidence_accuracy(
                 reference_all,
                 hypothesis_all,
@@ -160,8 +215,11 @@ def _facts(items: Any) -> dict[str, frozenset[str]]:
 def _extraction_metrics(
     reference: dict[str, frozenset[str]],
     hypothesis: dict[str, frozenset[str]],
-) -> dict[str, float]:
-    true_positives = len(set(reference) & set(hypothesis))
+) -> dict[str, Any]:
+    matched = set(reference) & set(hypothesis)
+    true_positives = len(matched)
+    false_positives = len(hypothesis) - true_positives
+    false_negatives = len(reference) - true_positives
     precision = true_positives / len(hypothesis) if hypothesis else 0.0
     recall = true_positives / len(reference) if reference else 0.0
     f1 = (
@@ -169,7 +227,14 @@ def _extraction_metrics(
         if precision + recall
         else 0.0
     )
-    return {"precision": precision, "recall": recall, "f1": f1}
+    return {
+        "truePositives": true_positives,
+        "falsePositives": false_positives,
+        "falseNegatives": false_negatives,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+    }
 
 
 def _evidence_accuracy(
@@ -193,6 +258,7 @@ def _diarization_error_rate(
     if not any(segment.speaker for segment in reference.segments):
         return None
     try:
+        import warnings
         from pyannote.core import Annotation, Segment
         from pyannote.metrics.diarization import DiarizationErrorRate
     except ImportError:
@@ -216,4 +282,11 @@ def _diarization_error_rate(
                     segment.endMilliseconds / 1000,
                 )
             ] = segment.speaker
-    return float(DiarizationErrorRate()(reference_annotation, hypothesis_annotation))
+
+    if len(reference_annotation) == 0:
+        return None
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return float(DiarizationErrorRate()(reference_annotation, hypothesis_annotation))
+

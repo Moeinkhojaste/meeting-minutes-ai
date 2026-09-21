@@ -1,0 +1,213 @@
+{
+  "name": "persian_sprint_meeting",
+  "language": "fa",
+  "description": "Persian technical sprint planning meeting with 3 speakers, 1 decision, and 2 action items.",
+  "reference": {
+    "rawTranscript": {
+      "schemaVersion": 1,
+      "segments": [
+        {
+          "id": "seg-0001",
+          "speaker": "علی",
+          "startMilliseconds": 0,
+          "endMilliseconds": 5000,
+          "language": "fa",
+          "text": "سلام به همگی، جلسه اسپرینت پلنینگ را شروع می‌کنیم."
+        },
+        {
+          "id": "seg-0002",
+          "speaker": "سارا",
+          "startMilliseconds": 5000,
+          "endMilliseconds": 12000,
+          "language": "fa",
+          "text": "سلام علی جان، گزارش تست‌های مرحله قبل آماده شده و مشکلی در دیتابیس وجود ندارد."
+        },
+        {
+          "id": "seg-0003",
+          "speaker": "رضا",
+          "startMilliseconds": 12000,
+          "endMilliseconds": 20000,
+          "language": "fa",
+          "text": "بخش احراز هویت هم کاملاً بازنویسی شده و تست‌های واحد با موفقیت پاس شدند."
+        },
+        {
+          "id": "seg-0004",
+          "speaker": "علی",
+          "startMilliseconds": 20000,
+          "endMilliseconds": 30000,
+          "language": "fa",
+          "text": "بسیار عالی، پس تصمیم گرفتیم که تاریخ انتشار نسخه جدید روز دوشنبه آینده باشد."
+        },
+        {
+          "id": "seg-0005",
+          "speaker": "سارا",
+          "startMilliseconds": 30000,
+          "endMilliseconds": 40000,
+          "language": "fa",
+          "text": "من تا روز یکشنبه مستندات API را کامل می‌کنم و در اختیار تیم قرار می‌دهم."
+        },
+        {
+          "id": "seg-0006",
+          "speaker": "رضا",
+          "startMilliseconds": 40000,
+          "endMilliseconds": 50000,
+          "language": "fa",
+          "text": "من هم مایگریشن‌های پایگاه داده را تا جمعه نهایی خواهم کرد."
+        }
+      ]
+    },
+    "minutes": {
+      "schemaVersion": 1,
+      "title": "جلسه برنامه‌ریزی اسپرینت",
+      "date": "1405-06-15",
+      "participants": [
+        {
+          "name": "علی",
+          "evidenceSegmentIds": ["seg-0001", "seg-0004"]
+        },
+        {
+          "name": "سارا",
+          "evidenceSegmentIds": ["seg-0002", "seg-0005"]
+        },
+        {
+          "name": "رضا",
+          "evidenceSegmentIds": ["seg-0003", "seg-0006"]
+        }
+      ],
+      "summary": "در این جلسه تیم تاریخ انتشار نسخه جدید را دوشنبه تعیین کرد و وظایف مستندسازی و مایگریشن به سارا و رضا محول شد.",
+      "topics": [
+        {
+          "title": "برنامه‌ریزی انتشار نسخه جدید",
+          "summary": "بررسی تست‌ها و تعیین ددلاین‌های پایانی",
+          "evidenceSegmentIds": ["seg-0001", "seg-0004"]
+        }
+      ],
+      "decisions": [
+        {
+          "text": "تاریخ انتشار نسخه جدید روز دوشنبه آینده باشد.",
+          "evidenceSegmentIds": ["seg-0004"]
+        }
+      ],
+      "actionItems": [
+        {
+          "task": "تکمیل مستندات API و در اختیار تیم قرار دادن",
+          "assignee": "سارا",
+          "deadline": "یکشنبه",
+          "evidenceSegmentIds": ["seg-0005"]
+        },
+        {
+          "task": "نهایی کردن مایگریشن‌های پایگاه داده",
+          "assignee": "رضا",
+          "deadline": "جمعه",
+          "evidenceSegmentIds": ["seg-0006"]
+        }
+      ],
+      "openQuestions": [],
+      "uncertainties": []
+    }
+  },
+  "hypothesis": {
+    "rawTranscript": {
+      "schemaVersion": 1,
+      "segments": [
+        {
+          "id": "seg-0001",
+          "speaker": "علی",
+          "startMilliseconds": 50,
+          "endMilliseconds": 5020,
+          "language": "fa",
+          "text": "سلام به همگی جلسه اسپرینت پلنینگ را شروع میکنیم."
+        },
+        {
+          "id": "seg-0002",
+          "speaker": "سارا",
+          "startMilliseconds": 5050,
+          "endMilliseconds": 12010,
+          "language": "fa",
+          "text": "سلام علی جان گزارش تست‌های مرحله قبل آماده شده و مشکلی در دیتابیس وجود ندارد."
+        },
+        {
+          "id": "seg-0003",
+          "speaker": "رضا",
+          "startMilliseconds": 12050,
+          "endMilliseconds": 19980,
+          "language": "fa",
+          "text": "بخش احراز هویت هم کاملا بازنویسی شده و تست‌های واحد با موفقیت پاس شدند."
+        },
+        {
+          "id": "seg-0004",
+          "speaker": "علی",
+          "startMilliseconds": 20000,
+          "endMilliseconds": 30050,
+          "language": "fa",
+          "text": "بسیار عالی پس تصمیم گرفتیم که تاریخ انتشار نسخه جدید روز دوشنبه آینده باشد."
+        },
+        {
+          "id": "seg-0005",
+          "speaker": "سارا",
+          "startMilliseconds": 30050,
+          "endMilliseconds": 40000,
+          "language": "fa",
+          "text": "من تا روز یکشنبه مستندات API را کامل می‌کنم و در اختیار تیم قرار می‌دهم."
+        },
+        {
+          "id": "seg-0006",
+          "speaker": "رضا",
+          "startMilliseconds": 40020,
+          "endMilliseconds": 49950,
+          "language": "fa",
+          "text": "من هم مایگریشن‌های پایگاه داده را تا جمعه نهایی خواهم کرد."
+        }
+      ]
+    },
+    "minutes": {
+      "schemaVersion": 1,
+      "title": "جلسه برنامه‌ریزی اسپرینت",
+      "date": "1405-06-15",
+      "participants": [
+        {
+          "name": "علی",
+          "evidenceSegmentIds": ["seg-0001", "seg-0004"]
+        },
+        {
+          "name": "سارا",
+          "evidenceSegmentIds": ["seg-0002", "seg-0005"]
+        },
+        {
+          "name": "رضا",
+          "evidenceSegmentIds": ["seg-0003", "seg-0006"]
+        }
+      ],
+      "summary": "در این جلسه تصمیم گرفته شد که نسخه جدید در روز دوشنبه منتشر شود.",
+      "topics": [
+        {
+          "title": "برنامه‌ریزی اسپرینت",
+          "summary": "هماهنگی تاریخ انتشار و وظایف اعضا",
+          "evidenceSegmentIds": ["seg-0001", "seg-0004"]
+        }
+      ],
+      "decisions": [
+        {
+          "text": "تاریخ انتشار نسخه جدید روز دوشنبه آینده باشد.",
+          "evidenceSegmentIds": ["seg-0004"]
+        }
+      ],
+      "actionItems": [
+        {
+          "task": "تکمیل مستندات API و در اختیار تیم قرار دادن",
+          "assignee": "سارا",
+          "deadline": "یکشنبه",
+          "evidenceSegmentIds": ["seg-0005"]
+        },
+        {
+          "task": "نهایی کردن مایگریشن‌های پایگاه داده",
+          "assignee": "رضا",
+          "deadline": "جمعه",
+          "evidenceSegmentIds": ["seg-0006"]
+        }
+      ],
+      "openQuestions": [],
+      "uncertainties": []
+    }
+  }
+}
