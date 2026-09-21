@@ -1,7 +1,9 @@
 using MeetingMinutesAI.Application.Abstractions.Persistence;
 using MeetingMinutesAI.Application.Abstractions.Ai;
+using MeetingMinutesAI.Application.Abstractions.Auth;
 using MeetingMinutesAI.Application.Abstractions.Storage;
 using MeetingMinutesAI.Infrastructure.Ai;
+using MeetingMinutesAI.Infrastructure.Auth;
 using MeetingMinutesAI.Infrastructure.Persistence;
 using MeetingMinutesAI.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +65,24 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
             client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
         });
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.SecretKey) && options.SecretKey.Length >= 32,
+                "Jwt:SecretKey must be at least 32 characters long.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.Issuer),
+                "Jwt:Issuer is required.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.Audience),
+                "Jwt:Audience is required.")
+            .Validate(
+                options => options.ExpiryMinutes > 0,
+                "Jwt:ExpiryMinutes must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IUnitOfWork>(provider =>
             provider.GetRequiredService<MeetingMinutesDbContext>());

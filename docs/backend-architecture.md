@@ -48,6 +48,17 @@ returns `428`, a malformed token returns `400`, and a stale token returns
 workflow operations. Deletion returns `409` for `Queued`, `Transcribing`, and
 `GeneratingMinutes` meetings.
 
+## Authentication and identity
+
+The backend implements stateless, verifiable JWT (JSON Web Token) authentication:
+
+- `User` is the identity aggregate root in the Domain layer (`MeetingMinutesAI.Domain.Users.User`), storing normalized emails, salted PBKDF2 password hashes, full names, and timestamps.
+- Passwords are encrypted using standard PBKDF2 (`HMAC-SHA256`, 128-bit random salt, 100,000 iterations) with constant-time equality checks to eliminate timing attacks.
+- Tokens are signed with HMAC-SHA256 using a server-side secret key and contain verified identity claims (`sub`, `email`, `name`, `jti`, `iat`, `exp`).
+- `POST /api/auth/register` and `POST /api/auth/login` issue standard Bearer JWT tokens.
+- `GET /api/auth/me` verifies the token and returns the current user profile.
+- Protected endpoints leverage ASP.NET Core `JwtBearerHandler` and `ClaimsPrincipal`. Meetings associate with the authenticated user ID, enforcing multi-user ownership and isolation.
+
 ## Audio and processing
 
 `POST /api/meetings/{id}/audio` streams one multipart `audio` file through a
